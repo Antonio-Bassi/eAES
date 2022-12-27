@@ -28,7 +28,7 @@ static uint8_t uaes_data_buf[UAES_MAX_DATA_LEN+1] = {0};
 static uint8_t uaes_key_buf[UAES_MAX_KEY_LEN+1] = {0};
 
 static void   uaes_set_kbr(key_length_t length, size_t *Nk, size_t *Nb, size_t *Nr);
-static size_t uaes_find_offset(size_t data_length);
+static size_t uaes_align_data_length(size_t data_length);
 static void   uaes_foward_cipher(size_t data_length, size_t Nk, size_t Nb, size_t Nr);
 static void   uaes_inverse_cipher(size_t data_length, size_t Nk, size_t Nb, size_t Nr);
 
@@ -92,31 +92,30 @@ static void uaes_set_kbr(key_length_t key_length, size_t *Nk, size_t *Nb, size_t
 }
 
 /**
- * @brief Sets the necessary data offset scalar for encryption/decryption.
+ * @brief Aligns data length to be a multiple of the AES block size.
  * @param data_length Length of the data to be encrypted.
- * @return size_t Offset number to be used.
+ * @return size_t Data length to be used.
  */
-static size_t uaes_find_offset(size_t data_length)
+static size_t uaes_align_data_length(size_t data_length)
 {
-  size_t offset = 0;
-  if( data_length >= 48 )
+  size_t buffer_length = 16;
+  if( data_length > 48 )
   {
-    offset = 3;
+    buffer_length = 64;
   }
-  else if( ( data_length >= 32 ) && ( data_length < 48 ) )
+  else if( data_length > 32 )
   {
-    offset = 2;
+    buffer_length = 48;
   }
-  else if( ( data_length >= 16 ) && ( data_length < 32 ) )
+  else if( data_length > 16)
   {
-    offset = 1;
+    buffer_length = 32;
   }
-
-  return offset;
+  return buffer_length;
 }
 
 /**
- * @brief Performs foward cipher encryption on provided data.
+ * @brief Computes foward cipher encryption on provided data set.
  * @param data_length Length of the data to be encrypted.
  * @param Nk          Key length in 32-bit words.
  * @param Nb          Block length in 32-bit words.
@@ -125,17 +124,16 @@ static size_t uaes_find_offset(size_t data_length)
  */
 static void uaes_foward_cipher(size_t data_length, size_t Nk, size_t Nb, size_t Nr)
 {
-  uint8_t  block[UAES_MAX_BLOCK_LEN + 1] = {0};
-  uint32_t kschd[UAES_MAX_KSCHD_LEN + 1] = {0};
-  size_t offset = 0;
+  uint8_t  block[UAES_MAX_BLOCK_LEN] = {0};
+  uint32_t kschd[UAES_MAX_KSCHD_LEN] = {0};
+  size_t offset = ( data_length >> 4 );
   size_t kdx = 0;
-  offset = uaes_find_offset(data_length);
 
   key_expansion(uaes_key_buf, kschd, Nk, (Nb*(Nr+1)));
   while (kdx < offset)
   {
     memcpy((void *)block, (void *)(&uaes_data_buf[16*kdx]), 4*Nb);
-    UAES_TRACE_BLOCK(UAES_TRACE_MSK_FWD, "round[%lu].block = ", block, 0);
+    UAES_TRACE_BLOCK(UAES_TRACE_MSK_FWD, "round[%lu].block = ", block, (size_t)0);
     add_round_key(block, kschd, 0, Nb);
     for(size_t round = 1; round < Nr; round++)
     {
@@ -160,9 +158,46 @@ static void uaes_foward_cipher(size_t data_length, size_t Nk, size_t Nb, size_t 
   return;
 }
 
+/**
+ * @brief             Computes inverse cipher decryption on provided data set.
+ * @param data_length 
+ * @param Nk 
+ * @param Nb 
+ * @param Nr 
+ */
 static void uaes_inverse_cipher(size_t data_length, size_t Nk, size_t Nb, size_t Nr)
 {
+  uint8_t   block[UAES_MAX_BLOCK_LEN] = {0};
+  uint32_t  kschd[UAES_MAX_KSCHD_LEN] = {0};
+  size_t offset = ( data_length >> 4 );
+  size_t kdx = 0;
 
+  key_expansion(uaes_key_buf, kschd, Nk, (Nb*(Nr+1)));
+  while(kdx < offset)
+  {
+    memcpy((void *) block, (void *)(&uaes_data_buf[16*kdx]), 4*Nb);
+    UAES_TRACE_BLOCK(UAES_TRACE_MSK_INV, "round[%lu].block = ", block, Nr);
+    add_round_key(block, kschd, Nr, Nb);
+    for(size_t round = Nr - 1; round > 0; round--)
+    {
+      UAES_TRACE_BLOCK(UAES_TRACE_MSK_INV, "round[%lu].start = ", block, round);
+      inv_shift_rows(block, Nb);
+      UAES_TRACE_BLOCK(UAES_TRACE_MSK_INV, "round[%lu].inv_sh_row = ", block, round);
+      inv_sub_block(block, Nb);
+      UAES_TRACE_BLOCK(UAES_TRACE_MSK_INV, "round[%lu].inv_s_box = ", block, round);
+      add_round_key(block, kschd, round, Nb);
+      UAES_TRACE_BLOCK(UAES_TRACE_MSK_INV, "round[%lu].add_rkey = ", block, round);
+      inv_mix_columns(block, Nb);
+    }
+    inv_shift_rows(block, Nb);
+    UAES_TRACE_BLOCK(UAES_TRACE_MSK_INV, "round[%lu].inv_sh_row = ", block, (size_t)0);
+    inv_sub_block(block, Nb);
+    UAES_TRACE_BLOCK(UAES_TRACE_MSK_INV, "round[%lu].inv_s_box = ", block, (size_t)0);
+    add_round_key(block, kschd, 0, Nb);
+    UAES_TRACE_BLOCK(UAES_TRACE_MSK_FWD, "round[%lu].end = ", block, (size_t)0);
+    memcpy((void *)(&uaes_data_buf[16*kdx]), (void *)block, 4*Nb);
+    kdx++;
+  }
   return;
 }
 
@@ -214,12 +249,13 @@ int uaes_encryption(uint8_t* in, uint8_t* out, uint8_t* key, key_length_t key_le
   memset((void *)uaes_key_buf , 0, UAES_MAX_KEY_LEN + 1);
   memcpy((void *)uaes_key_buf , (void *)key, key_len);
   
+  data_len = uaes_align_data_length(data_len);
+
   uaes_foward_cipher(data_len, Nk, Nb, Nr);
 
   memcpy((void *)out, (void *)uaes_data_buf, data_len);
-  
-  err = 0;
 
+  err = 0;
   return err;
 }
 
@@ -241,8 +277,8 @@ int uaes_decryption(uint8_t* in, uint8_t* out, uint8_t* key, key_length_t key_le
     return err;
   }
   
-  data_len = strlen(in);
-  key_len = strlen(key);
+  data_len  =   strlen(in);
+  key_len   =   strlen(key);
 
   if( ( UAES_MAX_DATA_LEN < data_len ) || ( UAES_MAX_KEY_LEN < key_len ) )
   {
@@ -256,6 +292,8 @@ int uaes_decryption(uint8_t* in, uint8_t* out, uint8_t* key, key_length_t key_le
   memset((void *)uaes_key_buf , 0, UAES_MAX_KEY_LEN + 1);
   memcpy((void *)uaes_key_buf , (void *)key, key_len);
 
+  data_len = uaes_align_data_length(data_len);
+  
   uaes_inverse_cipher(data_len, Nk, Nb, Nr);
 
   memcpy((void *)out, (void *)uaes_data_buf, data_len);
