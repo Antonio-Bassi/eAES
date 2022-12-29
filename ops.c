@@ -18,9 +18,10 @@
 #include "ops.h"
 
 #define UAES_MAX_BLOCK_LEN  16
-#define FOWARD_MAP          0x63    // Forward S-Box constant
-#define INVERSE_MAP         0x05    // Inverse S-Box constant    
-#define RIJNDAEL            0x11B
+
+static const uint8_t  s_box_fwd_map       = 0x63;
+static const uint8_t  s_box_inv_map       = 0x05;
+static const uint16_t rijndael_polynomial = 0x11B;
 
 static inline uint32_t rotword(uint32_t word);
 static inline uint32_t word_shift(uint32_t word, size_t nshifts);
@@ -104,7 +105,7 @@ static uint8_t gf256_mul(uint8_t Na, uint8_t Nb)
     }
     if( Na & 0x80 )
     {
-      Na = ( Na << 1 ) ^ RIJNDAEL;
+      Na = ( Na << 1 ) ^ rijndael_polynomial;
     }
     else
     {
@@ -126,9 +127,9 @@ static uint8_t gf256_inv(uint8_t Na)
     return Na;
 
   uint8_t Ninv = 1;
-  for(Ninv = 1; Ninv < RIJNDAEL; Ninv++)
+  for(Ninv = 1; Ninv < rijndael_polynomial; Ninv++)
   {
-    if( (gf256_mul(Na % RIJNDAEL, Ninv % RIJNDAEL) % RIJNDAEL) == 1 )
+    if( (gf256_mul(Na % rijndael_polynomial, Ninv % rijndael_polynomial) % rijndael_polynomial) == 1 )
       break;
   }
   return Ninv;
@@ -157,7 +158,7 @@ static uint32_t rcon(uint8_t val)
 static uint8_t sub_bytes(uint8_t byte)
 {
   uint8_t sbyte = gf256_inv(byte);
-  sbyte = ( sbyte ^ circ_shift(sbyte, 1) ^ circ_shift(sbyte, 2) ^ circ_shift(sbyte, 3) ^ circ_shift(sbyte, 4) ) ^ FOWARD_MAP;
+  sbyte = ( sbyte ^ circ_shift(sbyte, 1) ^ circ_shift(sbyte, 2) ^ circ_shift(sbyte, 3) ^ circ_shift(sbyte, 4) ) ^ s_box_fwd_map;
   return sbyte;
 }
 
@@ -168,7 +169,7 @@ static uint8_t sub_bytes(uint8_t byte)
  */
 static uint8_t inv_sub_bytes(uint8_t sbyte)
 {
-  uint8_t byte = ( circ_shift(sbyte, 1) ^ circ_shift(sbyte, 3) ^ circ_shift(sbyte, 6) ) ^ INVERSE_MAP;
+  uint8_t byte = ( circ_shift(sbyte, 1) ^ circ_shift(sbyte, 3) ^ circ_shift(sbyte, 6) ) ^ s_box_inv_map;
   byte = gf256_inv(byte);
   return byte;
 }
