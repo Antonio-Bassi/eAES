@@ -28,31 +28,35 @@
  */
 
 extern uint8_t trace_msk;
+extern int debug_line;
 
-#define UAES_TRACE_MSK_FWD    0x01
-#define UAES_TRACE_MSK_INV    0x02
-#define UAES_TRACE_MSK_KEXP   0x04
-#define UAES_TRACE_MSK_INPUT  0x08
-#define UAES_TRACE_MSK_TRACE  0x10
-#define UAES_TRACE_MSK_EVERY  0x1F
+#define uAES_TRACE_MSK_FWD    0x01
+#define uAES_TRACE_MSK_INV    0x02
+#define uAES_TRACE_MSK_KEXP   0x04
+#define uAES_TRACE_MSK_INPUT  0x08
+#define uAES_TRACE_MSK_TRACE  0x10
+#define uAES_TRACE_MSK_MEM    0x20
+#define uAES_TRACE_MSK_EVERY  0x2F
 
 #ifdef __UAES_DEBUG__
-#define UAES_TRACE( msk, fmt, ... )do {          \
-  if( trace_msk & msk )                          \
-    printf("debug->" fmt "\n", ##__VA_ARGS__ );  \
+#define uAES_TRACE( msk, fmt, ... )do {                         \
+  if( trace_msk & msk )                                         \
+    printf("debug[%d]:" fmt "\n", debug_line, ##__VA_ARGS__ );  \
+  debug_line++;                                                 \
 } while(0)
-#define UAES_TRACE_BLOCK( msk, fmt, block, ... ) do {\
-  if( trace_msk & msk )                              \
-  {                                                  \
-    printf("debug->" fmt, ##__VA_ARGS__);            \
-    for(size_t pos = 0; pos < 16; pos++)             \
-      printf("%.2x", block[pos]);                    \
-  }                                                  \
-  printf("\n");                                      \
+#define uAES_TRACE_BLOCK( msk, fmt, block, ... ) do {           \
+  if( trace_msk & msk )                                         \
+  {                                                             \
+    printf("debug[%d]:" fmt, debug_line, ##__VA_ARGS__);        \
+    for(size_t pos = 0; pos < 16; pos++)                        \
+      printf("%.2x", block[pos]);                               \
+  }                                                             \
+  debug_line++;                                                 \
+  printf("\n");                                                 \
 }while (0)                                                                    
 #else
-#define UAES_TRACE( msk, fmt, ... )do {} while (0)
-#define UAES_TRACE_BLOCK( msk, fmt, block, ... )do {} while(0)
+#define uAES_TRACE( msk, fmt, ... )do {} while (0)
+#define uAES_TRACE_BLOCK( msk, fmt, block, ... )do {} while(0)
 #endif /*__UAES_DEBUG__*/
 
 #endif /*UDBG_H*/

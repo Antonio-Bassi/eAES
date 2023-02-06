@@ -15,13 +15,13 @@
 
 typedef enum ukey
 {
-  UAES128 = 0,  // 128 bit-sized password.
-  UAES192 = 1,  // 192 bit-sized password.
-  UAES256 = 2,  // 256 bit-sized password.
-  UAESRNG = 3   // Range of length options
+  uAES128 = 0,  // 128 bit-sized password.
+  uAES192 = 1,  // 192 bit-sized password.
+  uAES256 = 2,  // 256 bit-sized password.
+  uAESRNG = 3   // Range of length options
 }ukey_t;
 
-extern uint8_t uaes_set_trace_msk(uint8_t msk);
+extern uint8_t  uaes_set_trace_msk(uint8_t msk);
 extern uint8_t* uaes_encryption(uint8_t* in, uint8_t* pwrd, ukey_t key_type);
 extern uint8_t* uaes_decryption(uint8_t* in, uint8_t* pwrd, ukey_t key_type);
 
