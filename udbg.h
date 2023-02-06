@@ -1,8 +1,8 @@
 /**
  * @file      udbg.h
  * @author    Antonio V. G. Bassi (antoniovitor.gb@gmail.com)
- * @brief     Tracing and debug macro definitions for micro-AES
- * @version   0.1
+ * @brief     Tracing and debug macro definitions for uAES
+ * @version   0.0
  * @date      2022-12-23 YYYY-MM-DD
  * @copyright Copyright (c) 2022
  * @note      tab = 2 spaces! 

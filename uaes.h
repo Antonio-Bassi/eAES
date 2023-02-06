@@ -1,7 +1,7 @@
 /**
  * @file      uaes.h
  * @author    Antonio V. G. Bassi (antoniovitor.gb@gmail.com)
- * @brief     micro-aes API references and global data-types. 
+ * @brief     uAES API references and global data-types. 
  * @version   0.0
  * @date      2022-12-23 YYYY-MM-DD
  * @copyright Copyright (c) 2022
@@ -11,16 +11,18 @@
 #ifndef UAES_H
 #define UAES_H
 
-typedef enum key_length
+#define UAES_MAX_LBL_LEN 10
+
+typedef enum ukey
 {
   UAES128 = 0,  // 128 bit-sized password.
   UAES192 = 1,  // 192 bit-sized password.
   UAES256 = 2,  // 256 bit-sized password.
   UAESRNG = 3   // Range of length options
-}key_length_t;
+}ukey_t;
 
 extern uint8_t uaes_set_trace_msk(uint8_t msk);
-extern int uaes_encryption(uint8_t* in, uint8_t* out, uint8_t* key, key_length_t key_length);
-extern int uaes_decryption(uint8_t* in, uint8_t* out, uint8_t* pwrd, key_length_t length);
+extern uint8_t* uaes_encryption(uint8_t* in, uint8_t* pwrd, ukey_t key_type);
+extern uint8_t* uaes_decryption(uint8_t* in, uint8_t* pwrd, ukey_t key_type);
 
 #endif /*UAES_H*/
