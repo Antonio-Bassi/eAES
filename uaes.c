@@ -92,7 +92,7 @@ static void uaes_set_kbr(ukey_t key_type, size_t *Nk, size_t *Nb, size_t *Nr)
       break;
   
     default:
-      UAES_TRACE(uAES_TRACE_MSK_TRACE, "Invalid argument \"length\" was provided. Using 256-bit key length.");
+      uAES_TRACE(uAES_TRACE_MSK_TRACE, "Invalid argument \"length\" was provided. Using 256-bit key length.");
       *(Nk) = 8;
       *(Nb) = 4;
       *(Nr) = 14;

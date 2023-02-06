@@ -1,5 +1,5 @@
 /**
- * @file      uaes_ops.c
+ * @file      uAES_ops.c
  * @author    Antonio V. G. Bassi (antoniovitor.gb@gmail.com)
  * @brief     Source code for the 256-element galois field mathematical operators and cipher operations.
  * @version   0.0
@@ -17,7 +17,7 @@
 #include "udbg.h"
 #include "ops.h"
 
-#define UAES_MAX_BLOCK_LEN  16
+#define uAES_MAX_BLOCK_LEN  16
 
 static const uint8_t  s_box_fwd_map       = 0x63;
 static const uint8_t  s_box_inv_map       = 0x05;
@@ -271,7 +271,7 @@ void inv_shift_rows(uint8_t *block, size_t Nb)
 void mix_columns(uint8_t *block, size_t Nb)
 {
   uint8_t  idx = 0;
-  uint8_t  tmp[UAES_MAX_BLOCK_LEN] = {0};
+  uint8_t  tmp[uAES_MAX_BLOCK_LEN] = {0};
 
   memcpy(tmp, block, 4*Nb);
 
@@ -294,7 +294,7 @@ void mix_columns(uint8_t *block, size_t Nb)
 void inv_mix_columns(uint8_t *block, size_t Nb)
 {
   uint8_t idx = 0;
-  uint8_t tmp[UAES_MAX_BLOCK_LEN] = {0};
+  uint8_t tmp[uAES_MAX_BLOCK_LEN] = {0};
 
   memcpy(tmp, block, 4*Nb);
 
@@ -325,31 +325,31 @@ void key_expansion(uint8_t *key, uint32_t *keysched, size_t Nk, size_t Ns)
     keysched[idx] = ( uint32_t )( key[4*idx] | key[4*idx + 1] << 8 | key[4*idx + 2] << 16 | key[4*idx + 3] << 24 );
     idx++;
   }
-  UAES_TRACE(UAES_TRACE_MSK_KEXP, "Start of key expansion algorithm!");
+  uAES_TRACE(uAES_TRACE_MSK_KEXP, "Start of key expansion algorithm!");
   idx = Nk;
   while( idx < Ns )
   {
       tmp = keysched[idx - 1];
-      UAES_TRACE(UAES_TRACE_MSK_KEXP, "keyexp.tmp = %.8x", tmp);
+      uAES_TRACE(uAES_TRACE_MSK_KEXP, "keyexp.tmp = %.8x", tmp);
       if( ( idx % Nk == 0 ) )
       {
           tmp = rotword(tmp);
-          UAES_TRACE(UAES_TRACE_MSK_KEXP, "keyexp.after rotword = %.8x", tmp);
+          uAES_TRACE(uAES_TRACE_MSK_KEXP, "keyexp.after rotword = %.8x", tmp);
           tmp = sub_word(tmp);
-          UAES_TRACE(UAES_TRACE_MSK_KEXP, "keyexp.after sub-word = %.8x", tmp);
+          uAES_TRACE(uAES_TRACE_MSK_KEXP, "keyexp.after sub-word = %.8x", tmp);
           tmp ^= rcon(idx/Nk);
-          UAES_TRACE(UAES_TRACE_MSK_KEXP, "keyexp.after XOR with rcon = %.8x", tmp);
+          uAES_TRACE(uAES_TRACE_MSK_KEXP, "keyexp.after XOR with rcon = %.8x", tmp);
       }
       else if ( ( Nk > 6 ) && ( idx % Nk == 4 ) )
       {
           tmp = sub_word(tmp);
-          UAES_TRACE(UAES_TRACE_MSK_KEXP, "keyexp.after sub-word = %.8x", tmp);
+          uAES_TRACE(uAES_TRACE_MSK_KEXP, "keyexp.after sub-word = %.8x", tmp);
       }
       keysched[idx] = keysched[idx - Nk] ^ tmp;
-      UAES_TRACE(UAES_TRACE_MSK_KEXP, "keyexp.kschd[%lu] = %.8x", idx, keysched[idx]);
+      uAES_TRACE(uAES_TRACE_MSK_KEXP, "keyexp.kschd[%lu] = %.8x", idx, keysched[idx]);
       idx++;
   }
-  UAES_TRACE(UAES_TRACE_MSK_KEXP, "End of key expansion!");
+  uAES_TRACE(uAES_TRACE_MSK_KEXP, "End of key expansion!");
   return;
 }
 
