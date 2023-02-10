@@ -36,7 +36,7 @@ void* prv_malloc(size_t size)
 void prv_free(void* ptr)
 {
 #ifdef UAES_USR_MEM_IMPL
-  /* place your malloc call here! */
+  /* place your free call here! */
 #else 
   free(ptr);
 #endif

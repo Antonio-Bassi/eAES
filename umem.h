@@ -9,6 +9,22 @@
  * 
  */
 
+#ifndef UMEM_H
+#define UMEM_H
+
+/**
+ * @note  This part of the file is dedicated for memory alignment procedures.
+ *        For specifying the memory allocator check the second note further below.
+ * 
+ * @brief The macros below are responsible for aligning the required memory size
+ *        of *x* in accordance with the alignment boundary *a*. 
+ */
+
+#define uAES_ALIGN_BNDRY 4
+#define uAES_ALIGN_MASK (uAES_ALIGN_BNDRY - 1)
+#define uAES_GET_ALIGN_MASK(x, mask)   (((x) + (mask) ) & ~(mask))
+#define uAES_ALIGN(x, a) uAES_GET_ALIGN_MASK(x, (typeof(x)(a)) - 1);
+
 /**
  * @note  Instead of assuming which memory allocator is being used we 
  *        require that the system integrator defines a set of functions
@@ -24,3 +40,4 @@
 extern void *prv_malloc(size_t size);
 extern void prv_free(void* ptr) ;
 
+#endif /* UMEM_H */

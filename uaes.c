@@ -25,23 +25,15 @@
 #define uAES_MAX_BLOCK_LEN  16
 #define uAES_MAX_KSCHD_LEN  60
 
-typedef struct header
-{
-  ukey_t    key_type;
-  size_t    buf_len;
-}header_t;
-
-static const size_t header_size = sizeof(header_t);
-static uint8_t uaes_cipher_buf[uAES_MAX_INPUT_LEN]  = {0};
-static uint8_t uaes_key_buf[uAES_MAX_KEY_LEN]       = {0};
+static const size_t cipher_block_size = ( ( sizeof(cipher_t) + (size_t)( uAES_ALIGN_MASK ) ) ) & ~( ( size_t ) uAES_ALIGN_MASK );
 
 uint8_t trace_msk   = 0x00;
 int     debug_line  = 0;
 
 static void   uaes_set_kbr(ukey_t key_type, size_t *Nk, size_t *Nb, size_t *Nr);
 static size_t uaes_align_data_length(size_t data_length);
-static void   uaes_foward_cipher(size_t data_length, size_t Nk, size_t Nb, size_t Nr);
-static void   uaes_inverse_cipher(size_t data_length, size_t Nk, size_t Nb, size_t Nr);
+static void   uaes_foward_cipher(uint8_t *key, uint8_t *data, size_t data_length, size_t Nk, size_t Nb, size_t Nr);
+static void   uaes_inverse_cipher(uint8_t *key, uint8_t *data, size_t data_length, size_t Nk, size_t Nb, size_t Nr);
 
 /**
  * @brief Sets trace mask for debugging.
@@ -132,17 +124,17 @@ static size_t uaes_align_data_length(size_t data_length)
  * @param Nr          Number of encryption rounds.
  * @return int        If successful returns a 0, otherwise -1 will be returned.
  */
-static void uaes_foward_cipher(size_t data_length, size_t Nk, size_t Nb, size_t Nr)
+static void uaes_foward_cipher(uint8_t *key, uint8_t *data, size_t data_length, size_t Nk, size_t Nb, size_t Nr)
 {
   uint8_t  block[uAES_MAX_BLOCK_LEN] = {0};
   uint32_t kschd[uAES_MAX_KSCHD_LEN] = {0};
   size_t offset = ( data_length >> 4 );
   size_t kdx = 0;
 
-  key_expansion(uaes_key_buf, kschd, Nk, (Nb*(Nr+1)));
+  key_expansion(key, kschd, Nk, (Nb*(Nr+1)));
   while (kdx < offset)
   {
-    memcpy((void *)block, (void *)(&uaes_cipher_buf[16*kdx]), 4*Nb);
+    memcpy((void *)block, (void *)(&data[16*kdx]), 4*Nb);
     uAES_TRACE_BLOCK(uAES_TRACE_MSK_FWD, "round[%lu].block = ", block, (size_t)0);
     add_round_key(block, kschd, 0, Nb);
     for(size_t round = 1; round < Nr; round++)
@@ -162,7 +154,7 @@ static void uaes_foward_cipher(size_t data_length, size_t Nk, size_t Nb, size_t 
     uAES_TRACE_BLOCK(uAES_TRACE_MSK_FWD, "round[%lu].sh_row = ", block, Nr);
     add_round_key(block, kschd, Nr, Nb);
     uAES_TRACE_BLOCK(uAES_TRACE_MSK_FWD, "round[%lu].end = ", block, Nr);
-    memcpy((void *)(&uaes_cipher_buf[16*kdx]), (void *)(block), 4*Nb);
+    memcpy((void *)(&data[16*kdx]), (void *)(block), 4*Nb);
     kdx++;
   }
   return;
@@ -175,17 +167,17 @@ static void uaes_foward_cipher(size_t data_length, size_t Nk, size_t Nb, size_t 
  * @param Nb 
  * @param Nr 
  */
-static void uaes_inverse_cipher(size_t data_length, size_t Nk, size_t Nb, size_t Nr)
+static void uaes_inverse_cipher(uint8_t *key, uint8_t *data, size_t data_length, size_t Nk, size_t Nb, size_t Nr)
 {
   uint8_t   block[uAES_MAX_BLOCK_LEN] = {0};
   uint32_t  kschd[uAES_MAX_KSCHD_LEN] = {0};
   size_t offset = ( data_length >> 4 );
   size_t kdx = 0;
 
-  key_expansion(uaes_key_buf, kschd, Nk, (Nb*(Nr+1)));
+  key_expansion(key, kschd, Nk, (Nb*(Nr+1)));
   while(kdx < offset)
   {
-    memcpy((void *) block, (void *)(&uaes_cipher_buf[16*kdx]), 4*Nb);
+    memcpy((void *) block, (void *)(&data[16*kdx]), 4*Nb);
     uAES_TRACE_BLOCK(uAES_TRACE_MSK_INV, "round[%lu].block = ", block, Nr);
     add_round_key(block, kschd, Nr, Nb);
     for(size_t round = Nr - 1; round > 0; round--)
@@ -205,7 +197,7 @@ static void uaes_inverse_cipher(size_t data_length, size_t Nk, size_t Nb, size_t
     uAES_TRACE_BLOCK(uAES_TRACE_MSK_INV, "round[%lu].inv_s_box = ", block, (size_t)0);
     add_round_key(block, kschd, 0, Nb);
     uAES_TRACE_BLOCK(uAES_TRACE_MSK_FWD, "round[%lu].end = ", block, (size_t)0);
-    memcpy((void *)(&uaes_cipher_buf[16*kdx]), (void *)block, 4*Nb);
+    memcpy((void *)(&data[16*kdx]), (void *)block, 4*Nb);
     kdx++;
   }
   return;
@@ -218,16 +210,15 @@ static void uaes_inverse_cipher(size_t data_length, size_t Nk, size_t Nb, size_t
  * @param key     Pointer to a NULL terminated password string, with a maximum of 32 characters.
  * @param length  Key type, can be uAES128, uAES192 or uAES256.
  *                If an invalid enumerator is passed, AES-256 key type encryption is the standard procedure.
- * @return uint8_t pointer to the encrypted buffer.
+ * @return cipher_t pointer to the allocated cipher block..
  */
-uint8_t* uaes_encryption(uint8_t* in, uint8_t* key, ukey_t key_type)
+cipher_t* uaes_encryption(uint8_t* in, uint8_t* key, ukey_t key_type)
 {
   uAES_TRACE(uAES_TRACE_MSK_TRACE, "Tracing is enabled.");
-  header_t header = {0};
   size_t Nk = 8, Nb = 4, Nr = 14;
-  uint8_t *cipher = NULL;
-  uint8_t *cipher_txt = NULL;
+  cipher_t *cipher = NULL;
   size_t total_length = 0;
+  size_t aligned_length = 0;
 
   if( ( NULL == in ) || ( NULL == key ) )
   {
@@ -247,33 +238,27 @@ uint8_t* uaes_encryption(uint8_t* in, uint8_t* key, ukey_t key_type)
 
   uaes_set_kbr(key_type, &Nk, &Nb, &Nr);
   total_length  = uaes_align_data_length(input_length);
-  total_length += header_size;
+  total_length += sizeof(cipher_t);
+  total_length = uAES_ALIGN(total_length, (4);
 
-  cipher = (uint8_t *) prv_malloc(total_length);
+  cipher = (void *) prv_malloc(total_length);
 
+  cipher->key_type = key_type;
+  cipher->buffer_size = total_length - cipher_block_size;
+  cipher->buffer = (uint8_t *)(cipher );
+  
   if( NULL == cipher )
   {
-    uAES_TRACE(uAES_TRACE_MSK_MEM, "String arguments exceeded the maximum size! Aborted.");
+    uAES_TRACE(uAES_TRACE_MSK_MEM, "Memory allocation for encryption failed! Aborted.");
     return cipher;
   }
 
-  cipher_txt = cipher + header_size;
-  header.key_type = key_type;
-  header.buf_len = input_length;
-
-  memset(cipher, 0x00, total_length);
-  memcpy((void *)cipher, (void *) &header, sizeof(header_t));
-  memcpy((void *)uaes_cipher_buf, (void *)in, input_length);
-  memcpy((void *)uaes_key_buf, (void *)key, key_length);
-
-  uaes_foward_cipher(input_length, Nk, Nb, Nr);
-
-  memcpy((void *)cipher_txt, (void *)uaes_cipher_buf, input_length);
+  uaes_foward_cipher(key, cipher->buffer, cipher->buffer_size, Nk, Nb, Nr);
 
   return cipher;
 }
 
-uint8_t* uaes_decryption(uint8_t* in, uint8_t* key, ukey_t key_type)
+uint8_t* uaes_decryption(cipher_t* in, uint8_t* key, ukey_t key_type)
 {
   uAES_TRACE(uAES_TRACE_MSK_TRACE, "Tracing is enabled.");
   uint8_t *data;
