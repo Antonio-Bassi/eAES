@@ -23,7 +23,7 @@
 #define uAES_ALIGN_BNDRY 4
 #define uAES_ALIGN_MASK (uAES_ALIGN_BNDRY - 1)
 #define uAES_GET_ALIGN_MASK(x, mask)   (((x) + (mask) ) & ~(mask))
-#define uAES_ALIGN(x, a) uAES_GET_ALIGN_MASK(x, (typeof(x)(a)) - 1);
+#define uAES_ALIGN(x, a) uAES_GET_ALIGN_MASK(x, (typeof(x))(a) - 1)
 
 /**
  * @note  Instead of assuming which memory allocator is being used we 

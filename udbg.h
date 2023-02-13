@@ -36,7 +36,7 @@ extern int debug_line;
 #define uAES_TRACE_MSK_INPUT  0x08
 #define uAES_TRACE_MSK_TRACE  0x10
 #define uAES_TRACE_MSK_MEM    0x20
-#define uAES_TRACE_MSK_EVERY  0x2F
+#define uAES_TRACE_MSK_EVERY  0x3F
 
 #ifdef __UAES_DEBUG__
 #define uAES_TRACE( msk, fmt, ... )do {                         \

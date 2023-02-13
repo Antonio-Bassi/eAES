@@ -28,8 +28,8 @@ typedef struct cipher
   uint8_t   *buffer;
 }cipher_t;
 
-extern uint8_t  uaes_set_trace_msk(uint8_t msk);
-extern cipher_t* uaes_encryption(uint8_t* in, uint8_t* pwrd, ukey_t key_type);
-extern uint8_t* uaes_decryption(cipher_t* in, uint8_t* pwrd, ukey_t key_type);
+extern uint8_t    uaes_set_trace_msk(uint8_t msk);
+extern cipher_t*  uaes_encryption(uint8_t* in, uint8_t* key, ukey_t key_type);
+extern uint8_t*   uaes_decryption(cipher_t* in, uint8_t* key, ukey_t key_type);
 
 #endif /*UAES_H*/

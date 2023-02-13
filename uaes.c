@@ -218,7 +218,6 @@ cipher_t* uaes_encryption(uint8_t* in, uint8_t* key, ukey_t key_type)
   size_t Nk = 8, Nb = 4, Nr = 14;
   cipher_t *cipher = NULL;
   size_t total_length = 0;
-  size_t aligned_length = 0;
 
   if( ( NULL == in ) || ( NULL == key ) )
   {
@@ -237,17 +236,17 @@ cipher_t* uaes_encryption(uint8_t* in, uint8_t* key, ukey_t key_type)
   }
 
   uaes_set_kbr(key_type, &Nk, &Nb, &Nr);
-  total_length  = uaes_align_data_length(input_length);
-  total_length += sizeof(cipher_t);
-  total_length = uAES_ALIGN(total_length, (4);
+  input_length  = uaes_align_data_length(input_length);
+  total_length = input_length + sizeof(cipher_t);
+  total_length =  uAES_ALIGN(total_length, uAES_ALIGN_BNDRY);
 
   cipher = (void *) prv_malloc(total_length);
 
   cipher->key_type = key_type;
-  cipher->buffer_size = total_length - cipher_block_size;
-  cipher->buffer = (uint8_t *)(cipher );
-  
-  if( NULL == cipher )
+  cipher->buffer_size = input_length;
+  cipher->buffer = (void *) prv_malloc(input_length);
+
+  if( NULL == cipher || NULL == cipher->buffer )
   {
     uAES_TRACE(uAES_TRACE_MSK_MEM, "Memory allocation for encryption failed! Aborted.");
     return cipher;
