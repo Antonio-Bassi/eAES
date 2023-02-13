@@ -32,8 +32,8 @@ int     debug_line  = 0;
 
 static void   uaes_set_kbr(ukey_t key_type, size_t *Nk, size_t *Nb, size_t *Nr);
 static size_t uaes_align_data_length(size_t data_length);
-static void   uaes_foward_cipher(uint8_t *key, uint8_t *data, size_t data_length, size_t Nk, size_t Nb, size_t Nr);
-static void   uaes_inverse_cipher(uint8_t *key, uint8_t *data, size_t data_length, size_t Nk, size_t Nb, size_t Nr);
+static void   uaes_foward_cipher(uint8_t *data, size_t data_length, uint8_t *key, size_t Nk, size_t Nb, size_t Nr);
+static void   uaes_inverse_cipher(uint8_t *data, size_t data_length, uint8_t *key, size_t Nk, size_t Nb, size_t Nr);
 
 /**
  * @brief Sets trace mask for debugging.
@@ -124,7 +124,7 @@ static size_t uaes_align_data_length(size_t data_length)
  * @param Nr          Number of encryption rounds.
  * @return int        If successful returns a 0, otherwise -1 will be returned.
  */
-static void uaes_foward_cipher(uint8_t *key, uint8_t *data, size_t data_length, size_t Nk, size_t Nb, size_t Nr)
+static void uaes_foward_cipher(uint8_t *data, size_t data_length, uint8_t *key, size_t Nk, size_t Nb, size_t Nr)
 {
   uint8_t  block[uAES_MAX_BLOCK_LEN] = {0};
   uint32_t kschd[uAES_MAX_KSCHD_LEN] = {0};
@@ -167,7 +167,7 @@ static void uaes_foward_cipher(uint8_t *key, uint8_t *data, size_t data_length, 
  * @param Nb 
  * @param Nr 
  */
-static void uaes_inverse_cipher(uint8_t *key, uint8_t *data, size_t data_length, size_t Nk, size_t Nb, size_t Nr)
+static void uaes_inverse_cipher(uint8_t *data, size_t data_length, uint8_t *key, size_t Nk, size_t Nb, size_t Nr)
 {
   uint8_t   block[uAES_MAX_BLOCK_LEN] = {0};
   uint32_t  kschd[uAES_MAX_KSCHD_LEN] = {0};
@@ -236,6 +236,7 @@ cipher_t* uaes_encryption(uint8_t* in, uint8_t* key, ukey_t key_type)
   }
 
   uaes_set_kbr(key_type, &Nk, &Nb, &Nr);
+
   input_length  = uaes_align_data_length(input_length);
   total_length = input_length + sizeof(cipher_t);
   total_length =  uAES_ALIGN(total_length, uAES_ALIGN_BNDRY);
@@ -252,15 +253,29 @@ cipher_t* uaes_encryption(uint8_t* in, uint8_t* key, ukey_t key_type)
     return cipher;
   }
 
-  uaes_foward_cipher(key, cipher->buffer, cipher->buffer_size, Nk, Nb, Nr);
+  memcpy((void *)cipher->buffer, (void *)in, cipher->buffer_size);
+  uaes_foward_cipher(cipher->buffer, cipher->buffer_size, key, Nk, Nb, Nr);
 
   return cipher;
 }
 
-uint8_t* uaes_decryption(cipher_t* in, uint8_t* key, ukey_t key_type)
+int uaes_decryption(cipher_t* in, uint8_t* key)
 {
   uAES_TRACE(uAES_TRACE_MSK_TRACE, "Tracing is enabled.");
-  uint8_t *data;
+  int err = -1;
+  size_t Nk = 8, Nb = 4, Nr = 14;
 
-  return data;
+  if( ( NULL == in ) || ( NULL == key ) )
+  {
+    uAES_TRACE(uAES_TRACE_MSK_INPUT, "Null pointers were passed as arguments! Aborted.");
+    return err;
+  }
+
+  uaes_set_kbr(in->key_type, &Nk, &Nb, &Nr);
+
+  uaes_inverse_cipher(in->buffer, in->buffer_size, key, Nk, Nb, Nr);
+
+  err = 0;
+
+  return err;
 }
