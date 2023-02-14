@@ -25,7 +25,11 @@
 #define uAES_MAX_BLOCK_LEN  16
 #define uAES_MAX_KSCHD_LEN  60
 
-static const size_t cipher_block_size = ( ( sizeof(cipher_t) + (size_t)( uAES_ALIGN_MASK ) ) ) & ~( ( size_t ) uAES_ALIGN_MASK );
+typedef struct
+{
+  ukey_t key_type;
+  size_t buffer_size;
+}header_t;
 
 uint8_t trace_msk   = 0x00;
 int     debug_line  = 0;
@@ -210,14 +214,16 @@ static void uaes_inverse_cipher(uint8_t *data, size_t data_length, uint8_t *key,
  * @param key     Pointer to a NULL terminated password string, with a maximum of 32 characters.
  * @param length  Key type, can be uAES128, uAES192 or uAES256.
  *                If an invalid enumerator is passed, AES-256 key type encryption is the standard procedure.
- * @return cipher_t pointer to the allocated cipher block..
+ * @return uint8_t pointer to the allocated memory for the cipher.
  */
-cipher_t* uaes_encryption(uint8_t* in, uint8_t* key, ukey_t key_type)
+uint8_t* uaes_encryption(uint8_t* in, uint8_t* key, ukey_t key_type)
 {
   uAES_TRACE(uAES_TRACE_MSK_TRACE, "Tracing is enabled.");
   size_t Nk = 8, Nb = 4, Nr = 14;
-  cipher_t *cipher = NULL;
   size_t total_length = 0;
+  header_t  *header = NULL;
+  uint8_t   *buffer = NULL;
+  uint8_t   *cipher = NULL;
 
   if( ( NULL == in ) || ( NULL == key ) )
   {
@@ -228,8 +234,8 @@ cipher_t* uaes_encryption(uint8_t* in, uint8_t* key, ukey_t key_type)
   size_t input_length = strlen(in);
   size_t key_length   = strlen(key);
 
-  if( ( uAES_MAX_INPUT_LEN < input_length ) || 
-      ( uAES_MAX_KEY_LEN < key_length) )
+  if( ( (uAES_MAX_INPUT_LEN) < input_length ) || 
+      ( (uAES_MAX_KEY_LEN) < key_length) )
   {
     uAES_TRACE(uAES_TRACE_MSK_INPUT, "String arguments exceeded the maximum size! Aborted.");
     return cipher;
@@ -238,44 +244,54 @@ cipher_t* uaes_encryption(uint8_t* in, uint8_t* key, ukey_t key_type)
   uaes_set_kbr(key_type, &Nk, &Nb, &Nr);
 
   input_length  = uaes_align_data_length(input_length);
-  total_length = input_length + sizeof(cipher_t);
+  total_length = input_length + sizeof(header_t) + 1;
   total_length =  uAES_ALIGN(total_length, uAES_ALIGN_BNDRY);
 
   cipher = (void *) prv_malloc(total_length);
+  header = (void *) prv_malloc(sizeof(header_t));
 
-  cipher->key_type = key_type;
-  cipher->buffer_size = input_length;
-  cipher->buffer = (void *) prv_malloc(input_length);
-
-  if( NULL == cipher || NULL == cipher->buffer )
+  if( NULL == cipher )
   {
     uAES_TRACE(uAES_TRACE_MSK_MEM, "Memory allocation for encryption failed! Aborted.");
     return cipher;
   }
 
-  memcpy((void *)cipher->buffer, (void *)in, cipher->buffer_size);
-  uaes_foward_cipher(cipher->buffer, cipher->buffer_size, key, Nk, Nb, Nr);
+  header->key_type = key_type;
+  header->buffer_size = input_length;
+
+  memset((void *)cipher, 0, total_length);
+  memcpy((void *)cipher, (void *)header, sizeof(header_t));
+
+  buffer = cipher + sizeof(header_t);
+  
+  memcpy((void *)buffer, (void *)in, header->buffer_size);
+  uaes_foward_cipher(buffer, header->buffer_size, key, Nk, Nb, Nr);
+
+  prv_free(header);
 
   return cipher;
 }
 
-int uaes_decryption(cipher_t* in, uint8_t* key)
+uint8_t* uaes_decryption(uint8_t* in, uint8_t* key)
 {
   uAES_TRACE(uAES_TRACE_MSK_TRACE, "Tracing is enabled.");
-  int err = -1;
+  header_t *header = NULL;
   size_t Nk = 8, Nb = 4, Nr = 14;
+  uint8_t *buffer = NULL;
 
   if( ( NULL == in ) || ( NULL == key ) )
   {
     uAES_TRACE(uAES_TRACE_MSK_INPUT, "Null pointers were passed as arguments! Aborted.");
-    return err;
+    return buffer;
   }
 
-  uaes_set_kbr(in->key_type, &Nk, &Nb, &Nr);
+  header = (void *)in;
 
-  uaes_inverse_cipher(in->buffer, in->buffer_size, key, Nk, Nb, Nr);
+  uaes_set_kbr(header->key_type, &Nk, &Nb, &Nr);
 
-  err = 0;
+  buffer = in + sizeof(header_t);
 
-  return err;
+  uaes_inverse_cipher(buffer, header->buffer_size, key, Nk, Nb, Nr);
+
+  return buffer;
 }

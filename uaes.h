@@ -21,15 +21,8 @@ typedef enum ukey
   uAESRNG = 3   // Range of length options
 }ukey_t;
 
-typedef struct cipher
-{
-  ukey_t    key_type;
-  size_t    buffer_size;
-  uint8_t   *buffer;
-}cipher_t;
-
-extern uint8_t    uaes_set_trace_msk(uint8_t msk);
-extern cipher_t*  uaes_encryption(uint8_t* in, uint8_t* key, ukey_t key_type);
-extern int        uaes_decryption(cipher_t* in, uint8_t* key);
+extern uint8_t   uaes_set_trace_msk(uint8_t msk);
+extern uint8_t*  uaes_encryption(uint8_t* in, uint8_t* key, ukey_t key_type);
+extern uint8_t*  uaes_decryption(uint8_t* in, uint8_t* key);
 
 #endif /*UAES_H*/
