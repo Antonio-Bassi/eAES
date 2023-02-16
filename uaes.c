@@ -1,4 +1,4 @@
-/**ES_MAX_KEY_LEN
+/**
  * @file      uaes.c
  * @author    Antonio V. G. Bassi (antoniovitor.gb@gmail.com)
  * @brief     uAES API source code. 
