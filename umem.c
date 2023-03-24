@@ -22,7 +22,7 @@
 
 #include "umem.h"
 
-void* prv_malloc(size_t size)
+void* uaes_prvMalloc(size_t size)
 {
   void* ptr = NULL;
 #ifdef UAES_USR_MEM_IMPL
@@ -33,7 +33,7 @@ void* prv_malloc(size_t size)
   return ptr;
 }
 
-void prv_free(void* ptr)
+void uaes_prvFree(void* ptr)
 {
 #ifdef UAES_USR_MEM_IMPL
   /* place your free call here! */

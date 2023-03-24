@@ -20,7 +20,7 @@
  *        of *x* in accordance with the alignment boundary *a*. 
  */
 
-#define uAES_ALIGN_BNDRY 4
+#define uAES_ALIGN_BNDRY 16
 #define uAES_ALIGN_MASK (uAES_ALIGN_BNDRY - 1)
 #define uAES_GET_ALIGN_MASK(x, mask)   (((x) + (mask) ) & ~(mask))
 #define uAES_ALIGN(x, a) uAES_GET_ALIGN_MASK(x, (typeof(x))(a) - 1)
@@ -37,7 +37,7 @@
  * 
  */
 
-extern void *prv_malloc(size_t size);
-extern void prv_free(void* ptr) ;
+extern void *uaes_prvMalloc(size_t size);
+extern void uaes_prvFree(void* ptr) ;
 
 #endif /* UMEM_H */

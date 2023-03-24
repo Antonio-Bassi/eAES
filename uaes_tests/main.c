@@ -5,8 +5,8 @@
 #include <string.h>
 #include <termios.h>
 
-#include "uaes.h"
-#include "udbg.h"
+#include "../uaes.h"
+#include "../udbg.h"
 #include "nist_fips197_luts.h"
 
 #define MAX_DIRSTR  255
@@ -14,7 +14,7 @@
 #define MAX_KEYSTR  32
 
 static inline void enable_shell_echo(void);
-static inline void disable_shell_echo(void);
+static inline void disable_shell_echo(void); 
 static void printmat(uint8_t *buf);
 
 static inline void enable_shell_echo(void)
@@ -43,15 +43,18 @@ static void printmat(uint8_t *buf)
 
 int main(int argc, char **argv)
 {
-  ukey_t key_type = uAES256;
-  int argx = 0;
-  int enc_type = 0;
-  int idx = 0;
+  // ukey_t key_type = uAES256;
+  // int argx = 0;
+  // int enc_type = 0;
+  // int idx = 0;
   char *cipher = NULL;
-  char path [MAX_DIRSTR + 1] = {0};
-  char input[MAX_INSTR + 1] = {0};
-  char key  [MAX_KEYSTR + 1] = {0};
+  char user_input[] = "IfYouCantReadThisItDidntWoooooooooork";
+ 
+  // char path [MAX_DIRSTR + 1] = {0};
+  // char input[MAX_INSTR + 1] = {0};
+  // char key  [MAX_KEYSTR + 1] = {0};
 
+/*
   while( argc > argx )
   {
     if( ( 0 == strcmp(argv[argx],"-b") ) )
@@ -80,13 +83,19 @@ int main(int argc, char **argv)
       strncpy(input, &argv[argx], MAX_INSTR);
     }
   }
+*/
+  //disable_shell_echo();
+  //printf("Type in key for AES%d encryption:", enc_type);
+  //scanf("%s", key);
+  //enable_shell_echo();
 
-  disable_shell_echo();
-  printf("Type in key for AES%d encryption:", enc_type);
-  scanf("%s", key);
-  enable_shell_echo();
 
-  cipher = uaes_encryption(input, key, key_type);
+  cipher = uaes_encryption(user_input, key_aes256, uAES256);
+  uaes_decryption(cipher, key_aes256);
 
+  if( 0 == strncmp((char *)((size_t)cipher + sizeof(uint16_t)), user_input, 16) )
+  {
+    free(cipher);
+  }
   return 0;
 }

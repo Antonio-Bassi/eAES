@@ -23,6 +23,6 @@ typedef enum ukey
 
 extern uint8_t   uaes_set_trace_msk(uint8_t msk);
 extern uint8_t*  uaes_encryption(uint8_t* in, uint8_t* key, ukey_t key_type);
-extern void      uaes_decryption(uint8_t* in, uint8_t* key, uint8_t *out);
+extern void      uaes_decryption(uint8_t* in, uint8_t* key);
 
 #endif /*UAES_H*/

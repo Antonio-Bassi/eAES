@@ -20,16 +20,17 @@
 #include "umem.h"
 #include "ops.h"
 
+#define uAES_HEADER_KEY_MSK 0xFF00
+#define uAES_HEADER_LEN_MSK 0x00FF
 #define uAES_MAX_INPUT_LEN  64
 #define uAES_MAX_KEY_LEN    32
 #define uAES_MAX_BLOCK_LEN  16
 #define uAES_MAX_KSCHD_LEN  60
 
-typedef struct
-{
-  ukey_t key_type;
-  size_t buffer_size;
-}header_t;
+#define uAES_HEADER_GET_KEY_TYPE(h)  (ukey_t)((h & uAES_HEADER_KEY_MSK) >> 8 )
+#define uAES_HEADER_GET_LEN(h)       (size_t)((h & uAES_HEADER_LEN_MSK) >> 0 )
+#define uAES_HEADER_PUT_KEY_TYPE(h, kt)  h |= (uint16_t)(((uint8_t) kt ) << 8 )
+#define uAES_HEADER_PUT_LEN(h, l)        h |= (uint16_t)(((uint8_t) l ) << 0 )
 
 uint8_t trace_msk   = 0x00;
 int     debug_line  = 0;
@@ -214,14 +215,15 @@ static void uaes_inverse_cipher(uint8_t *data, size_t data_length, uint8_t *key,
  * @param key     Pointer to a NULL terminated key string, with a maximum of 32 characters.
  * @param length  Key type, can be uAES128, uAES192 or uAES256.
  *                If an invalid enumerator is passed, AES-256 key type encryption is the standard procedure.
- * @return uint8_t pointer to the allocated memory for the cipher.
+ * 
+ * @return        uint8_t pointer to the allocated memory for the cipher.
  */
 uint8_t* uaes_encryption(uint8_t* in, uint8_t* key, ukey_t key_type)
 {
   uAES_TRACE(uAES_TRACE_MSK_TRACE, "Tracing is enabled.");
-  size_t Nk = 8, Nb = 4, Nr = 14;
-  size_t total_length = 0;
-  header_t  *header = NULL;
+  size_t    Nk = 8, Nb = 4, Nr = 14;
+  size_t    total_length = 0;
+  uint16_t   header = 0x0000;
   uint8_t   *buffer = NULL;
   uint8_t   *cipher = NULL;
 
@@ -243,12 +245,10 @@ uint8_t* uaes_encryption(uint8_t* in, uint8_t* key, ukey_t key_type)
 
   uaes_set_kbr(key_type, &Nk, &Nb, &Nr);
 
-  input_length  = uaes_pad_data_length(input_length);
-  total_length  = input_length + sizeof(header_t) + 1;
-  total_length  = uAES_ALIGN(total_length, uAES_ALIGN_BNDRY);
+  input_length  = uAES_ALIGN(input_length, uAES_ALIGN_BNDRY);
+  total_length  = input_length + 1 + (sizeof(uint16_t));
 
-  cipher = (void *) prv_malloc(total_length);
-  header = (void *) prv_malloc(sizeof(header_t));
+  cipher = (uint8_t *) uaes_prvMalloc(total_length);
 
   if( NULL == cipher )
   {
@@ -256,18 +256,18 @@ uint8_t* uaes_encryption(uint8_t* in, uint8_t* key, ukey_t key_type)
     return cipher;
   }
 
-  header->key_type = key_type;
-  header->buffer_size = input_length;
-
-  memset((void *)cipher, 0, total_length);
-  memcpy((void *)cipher, (void *)header, sizeof(header_t));
-
-  buffer = cipher + sizeof(header_t);
+  uAES_HEADER_PUT_LEN(header, input_length);
+  uAES_HEADER_PUT_KEY_TYPE(header, key_type);
   
-  memcpy((void *)buffer, (void *)in, header->buffer_size);
-  uaes_foward_cipher(buffer, header->buffer_size, key, Nk, Nb, Nr);
+  memset((void *)cipher, 0x00, total_length);
 
-  prv_free(header);
+  memcpy((void *)cipher, (void *)(&header), sizeof(uint16_t));
+
+  buffer = (uint8_t *)((size_t)cipher + sizeof(uint16_t));
+
+  memcpy((void *)buffer, (void *)in, input_length);
+
+  uaes_foward_cipher(buffer, input_length, key, Nk, Nb, Nr);
 
   return cipher;
 }
@@ -276,34 +276,30 @@ uint8_t* uaes_encryption(uint8_t* in, uint8_t* key, ukey_t key_type)
  * @brief           AES Decryption process
  * @param in        Pointer to a cipher buffer, this will be freed.
  * @param key       Pointer to the NULL terminated key string, with a maximum of 32 characters.
- * @param out       Pointer to the output buffer to store the decrypted data.
- * 
- * 
  */
-void uaes_decryption(uint8_t* in, uint8_t* key, uint8_t *out)
+void uaes_decryption(uint8_t* in, uint8_t* key)
 {
   uAES_TRACE(uAES_TRACE_MSK_TRACE, "Tracing is enabled.");
-  header_t *header = NULL;
+  uint16_t header = 0x0000;
+  ukey_t key_type = uAES256;
+  size_t buffer_length = 0;
   size_t Nk = 8, Nb = 4, Nr = 14;
   uint8_t *buffer = NULL;
 
   if( ( NULL == in ) || ( NULL == key ) )
   {
     uAES_TRACE(uAES_TRACE_MSK_INPUT, "Null pointers were passed as arguments! Aborted.");
-    return buffer;
+    return;
   }
 
-  header = (void *)in;
-
-  uaes_set_kbr(header->key_type, &Nk, &Nb, &Nr);
-
-  buffer = in + sizeof(header_t);
-
-  uaes_inverse_cipher(buffer, header->buffer_size, key, Nk, Nb, Nr);
-
-  memcpy(out, buffer, header->buffer_size);
-
-  prv_free(in);
+  memcpy((void *)(&header), (void *)in, sizeof(uint16_t));
   
+  key_type = uAES_HEADER_GET_KEY_TYPE(header);
+  buffer_length = uAES_HEADER_GET_LEN(header);
+
+  uaes_set_kbr(key_type, &Nk, &Nb, &Nr);
+  buffer = (uint8_t *)((size_t)in + sizeof(uint16_t));
+  uaes_inverse_cipher(buffer, buffer_length, key, Nk, Nb, Nr);
+
   return;
 }
