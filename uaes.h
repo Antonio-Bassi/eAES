@@ -25,4 +25,11 @@ extern uint8_t   uaes_set_trace_msk(uint8_t msk);
 extern uint8_t*  uaes_encryption(uint8_t* in, uint8_t* key, ukey_t key_type);
 extern void      uaes_decryption(uint8_t* in, uint8_t* key);
 
+extern int uaes128enc(uint8_t *plaintext, uint8_t *key, size_t plaintext_size);
+extern int uaes128dec(uint8_t *ciphertext, uint8_t *key, size_t ciphertext_size);
+extern int uaes192enc(uint8_t *plaintext, uint8_t *key, size_t plaintext_size);
+extern int uaes192dec(uint8_t *ciphertext, uint8_t *key, size_t ciphertext_size);
+extern int uaes256enc(uint8_t *plaintext, uint8_t *key, size_t plaintext_size);
+extern int uaes256dec(uint8_t *ciphertext, uint8_t *key, size_t ciphertext_size);
+
 #endif /*UAES_H*/

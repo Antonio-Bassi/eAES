@@ -41,13 +41,13 @@ extern int debug_line;
 #ifdef __UAES_DEBUG__
 #define uAES_TRACE( msk, fmt, ... )do {                         \
   if( trace_msk & msk )                                         \
-    printf("debug[%d]:" fmt "\n", debug_line, ##__VA_ARGS__ );  \
+    printf("dbg[%d]:" fmt "\n", debug_line, ##__VA_ARGS__ );  \
   debug_line++;                                                 \
 } while(0)
 #define uAES_TRACE_BLOCK( msk, fmt, block, ... ) do {           \
   if( trace_msk & msk )                                         \
   {                                                             \
-    printf("debug[%d]:" fmt, debug_line, ##__VA_ARGS__);        \
+    printf("dbg[%d]:" fmt, debug_line, ##__VA_ARGS__);        \
     for(size_t pos = 0; pos < 16; pos++)                        \
       printf("%.2x", block[pos]);                               \
   }                                                             \

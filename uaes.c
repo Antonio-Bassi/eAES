@@ -245,7 +245,7 @@ uint8_t* uaes_encryption(uint8_t* in, uint8_t* key, ukey_t key_type)
 
   uaes_set_kbr(key_type, &Nk, &Nb, &Nr);
 
-  input_length  = uAES_ALIGN(input_length, uAES_ALIGN_BNDRY);
+  input_length  = uAES_ALIGN(input_length, uAES_BLOCK_ALIGN);
   total_length  = input_length + 1 + (sizeof(uint16_t));
 
   cipher = (uint8_t *) uaes_prvMalloc(total_length);
@@ -303,3 +303,74 @@ void uaes_decryption(uint8_t* in, uint8_t* key)
 
   return;
 }
+
+int uaes128enc(uint8_t *plaintext, uint8_t *key, size_t plaintext_size)
+{
+  int err = -1;
+  const size_t Nk = 4, Nb = 4, Nr = 10;
+  if( (NULL != key) && (NULL != plaintext) && (0 < plaintext_size) )
+  {
+    err = 0;
+    uaes_foward_cipher(plaintext, plaintext_size, key, Nk, Nb, Nr);
+  }
+  return err;
+}
+
+int uaes192enc(uint8_t *plaintext, uint8_t *key, size_t plaintext_size)
+{
+  int err = -1;
+  const size_t Nk = 6, Nb = 4, Nr = 12;
+  if( (NULL != key) && (NULL != plaintext) && (0 < plaintext_size) )
+  {
+    err = 0;
+    uaes_foward_cipher(plaintext, plaintext_size, key, Nk, Nb, Nr);
+  }
+  return err;
+}
+
+int uaes256enc(uint8_t *plaintext, uint8_t *key, size_t plaintext_size)
+{
+  int err = -1;
+  const size_t Nk = 8, Nb = 4, Nr = 14;
+  if( (NULL != key) && (NULL != plaintext) && (0 < plaintext_size) )
+  {
+    err = 0;
+    uaes_foward_cipher(plaintext, plaintext_size, key, Nk, Nb, Nr);
+  }
+  return err;
+}
+
+extern int uaes128dec(uint8_t *ciphertext, uint8_t *key, size_t ciphertext_size)
+{
+  int err = -1;
+  const size_t Nk = 4, Nb = 4, Nr = 10;
+  if( (NULL != key) && (NULL != ciphertext) && (0 < ciphertext_size) )
+  {
+    err = 0;
+    uaes_inverse_cipher(ciphertext, ciphertext_size, key, Nk, Nb, Nr);
+  }
+  return err;
+}
+extern int uaes192dec(uint8_t *ciphertext, uint8_t *key, size_t ciphertext_size)
+{
+  int err = -1;
+  const size_t Nk = 6, Nb = 4, Nr = 12;
+  if( (NULL != key) && (NULL != ciphertext) && (0 < ciphertext_size) )
+  {
+    err = 0;
+    uaes_inverse_cipher(ciphertext, ciphertext_size, key, Nk, Nb, Nr);
+  }
+  return err;
+}
+extern int uaes256dec(uint8_t *ciphertext, uint8_t *key, size_t ciphertext_size)
+{
+  int err = -1;
+  const size_t Nk = 8, Nb = 4, Nr = 14;
+  if( (NULL != key) && (NULL != ciphertext) && (0 < ciphertext_size) )
+  {
+    err = 0;
+    uaes_inverse_cipher(ciphertext, ciphertext_size, key, Nk, Nb, Nr);
+  }
+  return err;
+}
+
