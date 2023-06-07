@@ -146,6 +146,8 @@ int main(int argc, char **argv)
   uint8_t in[MAX_INPUTSTR] = {0};
   uint8_t *out = NULL;
 
+  uaes_set_trace_msk((uAES_TRACE_MSK_FWD | uAES_TRACE_MSK_INV | uAES_TRACE_MSK_KEXP));
+
   if(min_args <= argc)
   {
     while(arg < argc)
@@ -157,16 +159,15 @@ int main(int argc, char **argv)
         key_size = __strnlen(argv[arg], MAX_KEYSTR);
         memcpy((void *)key, (void *)argv[arg], key_size);
 
-        if( 0 != (key_size & uAES_PWORD_ALIGN_MASK) )
+        if( 0 != (key_size & uAES_BYTE_ALIGN_MASK) )
         {
-          /* Perform padding on given password */
-          padding_size = uAES_ALIGN(key_size, uAES_PWORD_ALIGN) - key_size;
+          padding_size = uAES_ALIGN(key_size, uAES_BYTE_ALIGN) - key_size;
           for(size_t padpos = 0; padpos < padding_size; padpos++)
           {
             checksum = key[padpos] + key[padpos + 1] + key[padpos + 2];
             key[key_size + padpos] = ~checksum;
           }
-          key_size = uAES_ALIGN(key_size, uAES_PWORD_ALIGN);
+          key_size = uAES_ALIGN(key_size, uAES_BYTE_ALIGN);
         }
       }
       else if((0 == strcmp(argv[arg],"-p")) && (0 == (argmsk & ARG_MSK_PLAINTEXT)))

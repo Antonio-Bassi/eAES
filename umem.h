@@ -20,10 +20,10 @@
  *        of *x* in accordance with the alignment boundary *a*. 
  */
 
-#define uAES_BLOCK_ALIGN 16UL
-#define uAES_PWORD_ALIGN 8UL
-#define uAES_BLOCK_ALIGN_MASK (0x000F)
-#define uAES_PWORD_ALIGN_MASK (0x0007)
+#define uAES_BLOCK_ALIGN        16UL
+#define uAES_BLOCK_ALIGN_MASK   (0x000F)
+#define uAES_BYTE_ALIGN         8UL
+#define uAES_BYTE_ALIGN_MASK    (0x0007)
 #define uAES_GET_ALIGN_MASK(x, mask)   (((x) + (mask) ) & ~(mask))
 #define uAES_ALIGN(x, a) uAES_GET_ALIGN_MASK(x, (typeof(x))(a) - 1)
 

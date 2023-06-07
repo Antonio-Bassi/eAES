@@ -38,7 +38,7 @@ extern int debug_line;
 #define uAES_TRACE_MSK_MEM    0x20
 #define uAES_TRACE_MSK_EVERY  0x3F
 
-#ifdef __UAES_DEBUG__
+#ifdef __uAES_DEBUG__
 #define uAES_TRACE( msk, fmt, ... )do {                         \
   if( trace_msk & msk )                                         \
     printf("dbg[%d]:" fmt "\n", debug_line, ##__VA_ARGS__ );  \
