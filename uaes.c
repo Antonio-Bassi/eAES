@@ -7,6 +7,9 @@
  * @copyright Copyright (c) 2022
  * @note      tab = 2 spaces!
  *  
+ * TODO: Fix segmentation fault when key size does not match encryption type.
+ * TODO: Implement a static buffer for key and input in order to perform encryption/decryption operations.
+ * 
  */
 
 #include <stdio.h>

@@ -138,10 +138,12 @@ int main(int argc, char **argv)
   int     err = -1;
   uint8_t argmsk = 0x00;
   ukey_t  encryption_type = uAES128;
+  size_t  aligned_size = 0;
   size_t  padding_size = 0;
   size_t  input_size = 0;
   size_t  key_size = 0;
   uint8_t checksum = 0;
+  uint8_t z1 = 0, z2 = 0;
   uint8_t key[MAX_KEYSTR] = {0};
   uint8_t in[MAX_INPUTSTR] = {0};
   uint8_t *out = NULL;
@@ -158,17 +160,6 @@ int main(int argc, char **argv)
         arg++;
         key_size = __strnlen(argv[arg], MAX_KEYSTR);
         memcpy((void *)key, (void *)argv[arg], key_size);
-
-        if( 0 != (key_size & uAES_BYTE_ALIGN_MASK) )
-        {
-          padding_size = uAES_ALIGN(key_size, uAES_BYTE_ALIGN) - key_size;
-          for(size_t padpos = 0; padpos < padding_size; padpos++)
-          {
-            checksum = key[padpos] + key[padpos + 1] + key[padpos + 2];
-            key[key_size + padpos] = ~checksum;
-          }
-          key_size = uAES_ALIGN(key_size, uAES_BYTE_ALIGN);
-        }
       }
       else if((0 == strcmp(argv[arg],"-p")) && (0 == (argmsk & ARG_MSK_PLAINTEXT)))
       {
@@ -176,10 +167,6 @@ int main(int argc, char **argv)
         arg++;
         input_size = __strnlen(argv[arg], MAX_INPUTSTR);
         memcpy((void *)in, (void *)argv[arg], input_size);
-        if( 0 != (input_size & uAES_BLOCK_ALIGN_MASK) )
-        {
-          input_size = uAES_ALIGN(input_size, uAES_BLOCK_ALIGN);
-        }
       }
       else if((0 == strcmp(argv[arg], "-t")) && (0 == (argmsk & ARG_MSK_CRYPTOTYPE)))
       {
@@ -205,10 +192,28 @@ int main(int argc, char **argv)
       arg++;
     }
 
+    if( 0 != (key_size & uAES_BYTE_ALIGN_MASK) )
+    {
+      aligned_size = (uAES128==encryption_type)?(16UL):((uAES192==encryption_type)?(24UL):((uAES256==encryption_type)?(32UL):(0UL)));
+      padding_size = aligned_size - key_size;
+      for(size_t padpos = 0; padpos < padding_size; padpos++)
+      {
+        key[key_size + padpos] = ~(key[padpos] + z1) + 1;
+        z1 = key[padpos] + z2;
+        z2 = key[padpos];
+      }
+    }
+    if( 0 != (input_size & uAES_BLOCK_ALIGN_MASK) )
+    {
+      input_size = uAES_ALIGN(input_size, uAES_BLOCK_ALIGN);
+    }
+
     printf("Received input: ");
     printhex(in, input_size);
     printf("Total plaintext blocks: ");
     xprintmat(in, input_size);
+    printf("Received key: ");
+    xprintmat(key, aligned_size);
 
     switch (encryption_type)
     {
