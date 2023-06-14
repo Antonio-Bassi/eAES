@@ -22,7 +22,11 @@ typedef enum crypto
 /* Debug */
 extern uint8_t   uaes_set_trace_msk(uint8_t msk);
 
-/* Encryption */
+/* Encryption API*/
+
+/** 
+ * NOTE: AES-ECB IS NO LONGER CONSIDERED SAFE, USE IT AT YOUR OWN RISK. 
+ */
 extern int uaes_ecb_encryption( uint8_t   *plaintext, 
                                 size_t    plaintext_size, 
                                 uint8_t   *key, 
@@ -33,7 +37,11 @@ extern int uaes128enc(uint8_t *plaintext, uint8_t *key, size_t plaintext_size);
 extern int uaes192enc(uint8_t *plaintext, uint8_t *key, size_t plaintext_size);
 extern int uaes256enc(uint8_t *plaintext, uint8_t *key, size_t plaintext_size);
 
-/* Decryption */
+/* Decryption API*/
+
+/** 
+ * NOTE: AES-ECB IS NO LONGER CONSIDERED SAFE, USE IT AT YOUR OWN RISK. 
+ */
 extern int uaes_ecb_decryption( uint8_t   *ciphertext, 
                                 size_t    ciphertext_size, 
                                 uint8_t   *key, 

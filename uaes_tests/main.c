@@ -138,15 +138,15 @@ int main(int argc, char **argv)
   int     err = -1;
   uint8_t argmsk = 0x00;
   crypto_t  encryption_type = uAES128;
-  size_t  aligned_size = 0;
-  size_t  padding_size = 0;
-  size_t  input_size = 0;
-  size_t  key_buffer_size = 0;
-  uint8_t checksum = 0;
-  uint8_t z1 = 0, z2 = 0;
-  uint8_t key[MAX_KEYSTR] = {0};
-  uint8_t in[MAX_INPUTSTR] = {0};
-  uint8_t *out = NULL;
+  size_t    aligned_size = 0;
+  size_t    padding_size = 0;
+  size_t    input_size = 0;
+  size_t    key_buffer_size = 0;
+  uint8_t   checksum = 0;
+  uint8_t   z1 = 0, z2 = 0;
+  uint8_t   key[MAX_KEYSTR] = {0};
+  uint8_t   in[MAX_INPUTSTR] = {0};
+  uint8_t   *out = NULL;
 
   uaes_set_trace_msk((uAES_TRACE_MSK_FWD | uAES_TRACE_MSK_INV | uAES_TRACE_MSK_KEXP));
 
