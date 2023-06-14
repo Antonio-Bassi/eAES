@@ -137,11 +137,11 @@ int main(int argc, char **argv)
   int     arg =  1;
   int     err = -1;
   uint8_t argmsk = 0x00;
-  ukey_t  encryption_type = uAES128;
+  crypto_t  encryption_type = uAES128;
   size_t  aligned_size = 0;
   size_t  padding_size = 0;
   size_t  input_size = 0;
-  size_t  key_size = 0;
+  size_t  key_buffer_size = 0;
   uint8_t checksum = 0;
   uint8_t z1 = 0, z2 = 0;
   uint8_t key[MAX_KEYSTR] = {0};
@@ -158,8 +158,8 @@ int main(int argc, char **argv)
       {
         argmsk = ((argmsk & (~ARG_MSK_KEY)) | (ARG_MSK_KEY));
         arg++;
-        key_size = __strnlen(argv[arg], MAX_KEYSTR);
-        memcpy((void *)key, (void *)argv[arg], key_size);
+        key_buffer_size = __strnlen(argv[arg], MAX_KEYSTR);
+        memcpy((void *)key, (void *)argv[arg], key_buffer_size);
       }
       else if((0 == strcmp(argv[arg],"-p")) && (0 == (argmsk & ARG_MSK_PLAINTEXT)))
       {
@@ -192,16 +192,17 @@ int main(int argc, char **argv)
       arg++;
     }
 
-    if( 0 != (key_size & uAES_BYTE_ALIGN_MASK) )
+    if( 0 != (key_buffer_size & uAES_BYTE_ALIGN_MASK) )
     {
       aligned_size = (uAES128==encryption_type)?(16UL):((uAES192==encryption_type)?(24UL):((uAES256==encryption_type)?(32UL):(0UL)));
-      padding_size = aligned_size - key_size;
+      padding_size = aligned_size - key_buffer_size;
       for(size_t padpos = 0; padpos < padding_size; padpos++)
       {
-        key[key_size + padpos] = ~(key[padpos] + z1) + 1;
+        key[key_buffer_size + padpos] = ~(key[padpos] + z1) + 1;
         z1 = key[padpos] + z2;
         z2 = key[padpos];
       }
+      key_buffer_size = aligned_size;
     }
     if( 0 != (input_size & uAES_BLOCK_ALIGN_MASK) )
     {
@@ -212,32 +213,30 @@ int main(int argc, char **argv)
     printhex(in, input_size);
     printf("Total plaintext blocks: ");
     xprintmat(in, input_size);
-    printf("Received key: ");
-    xprintmat(key, aligned_size);
-
+    
     switch (encryption_type)
     {
       case uAES128:
-        err = uaes128enc(in, key, input_size);
+        err = uaes_ecb_encryption(in, input_size, key, key_buffer_size, encryption_type);
         printf("AES128 Encrypted plaintext blocks: ");
         xprintmat(in, input_size);
-        err = uaes128dec(in, key, input_size);
+        err = uaes_ecb_decryption(in, input_size, key, key_buffer_size, encryption_type);
         printf("AES128 Decrypted plaintext blocks: ");
         xprintmat(in, input_size);
         break;
       case uAES192:
-        err = uaes192enc(in, key, input_size);
+        err = uaes_ecb_encryption(in, input_size, key, key_buffer_size, encryption_type);
         printf("AES192 Encrypted plaintext blocks: ");
         xprintmat(in, input_size);
-        err = uaes192dec(in, key, input_size);
+        err = uaes_ecb_decryption(in, input_size, key, key_buffer_size, encryption_type);
         printf("AES192 Decrypted plaintext blocks: ");
         xprintmat(in, input_size);
         break;
       case uAES256:
-        err = uaes256enc(in, key, input_size);
+        err = uaes_ecb_encryption(in, input_size, key, key_buffer_size, encryption_type);
         printf("AES256 Encrypted plaintext blocks: ");
         xprintmat(in, input_size);
-        err = uaes256dec(in, key, input_size);
+        err = uaes_ecb_decryption(in, input_size, key, key_buffer_size, encryption_type);
         printf("AES256 Decrypted plaintext blocks: ");
         xprintmat(in, input_size);
         break;
