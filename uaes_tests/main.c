@@ -217,26 +217,26 @@ int main(int argc, char **argv)
     switch (encryption_type)
     {
       case uAES128:
-        err = uaes_ecb_encryption(in, input_size, key, key_buffer_size, encryption_type);
+        err = uaes_cbc_encryption(in, input_size, key, input_aes128, encryption_type);
         printf("AES128 Encrypted plaintext blocks: ");
         xprintmat(in, input_size);
-        err = uaes_ecb_decryption(in, input_size, key, key_buffer_size, encryption_type);
+        err = uaes_cbc_decryption(in, input_size, key, input_aes128, encryption_type);
         printf("AES128 Decrypted plaintext blocks: ");
         xprintmat(in, input_size);
         break;
       case uAES192:
-        err = uaes_ecb_encryption(in, input_size, key, key_buffer_size, encryption_type);
+        err = uaes_cbc_encryption(in, input_size, key, input_aes192, encryption_type);
         printf("AES192 Encrypted plaintext blocks: ");
         xprintmat(in, input_size);
-        err = uaes_ecb_decryption(in, input_size, key, key_buffer_size, encryption_type);
+        err = uaes_cbc_decryption(in, input_size, key, input_aes192, encryption_type);
         printf("AES192 Decrypted plaintext blocks: ");
         xprintmat(in, input_size);
         break;
       case uAES256:
-        err = uaes_ecb_encryption(in, input_size, key, key_buffer_size, encryption_type);
+        err = uaes_cbc_encryption(in, input_size, key, input_aes256, encryption_type);
         printf("AES256 Encrypted plaintext blocks: ");
         xprintmat(in, input_size);
-        err = uaes_ecb_decryption(in, input_size, key, key_buffer_size, encryption_type);
+        err = uaes_cbc_decryption(in, input_size, key, input_aes256, encryption_type);
         printf("AES256 Decrypted plaintext blocks: ");
         xprintmat(in, input_size);
         break;

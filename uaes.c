@@ -25,9 +25,7 @@
 
 #define uAES_HEADER_KEY_MSK   (0xFF00)
 #define uAES_HEADER_SIZE_MSK  (0x00FF)
-#define uAES_MAX_INPUT_SIZE   (64UL)
-#define uAES_MAX_KEY_SIZE     (32UL)
-#define uAES_BLOCK_SIZE       (16UL)
+
 #define uAES128_KSCHD_SIZE    (44UL)
 #define uAES192_KSCHD_SIZE    (52UL)
 #define uAES256_KSCHD_SIZE    (60UL)
@@ -39,13 +37,11 @@
 #define uAES_HEADER_PUT_SIZE(h, l)          h |= (uint16_t)(((uint8_t) l ) << 0 )
 
 uint8_t trace_msk   = 0x00;
-int     debug_line  = 0;
-
 static uint8_t input_buffer[uAES_MAX_INPUT_SIZE] = {0};
 static uint8_t key_buffer[uAES_MAX_KEY_SIZE]     = {0};
 
 static size_t uaes_strnlen(char *str, size_t lim);
-static void   uaes_set_kbr(crypto_t crypto_mode, size_t *Nk, size_t *Nb, size_t *Nr);
+static void   uaes_xor_iv(uint8_t *blk, uint8_t *iv);
 static void   uaes_foward_cipher(uint8_t *buf, uint32_t *kschd, size_t Nk, size_t Nb, size_t Nr);
 static void   uaes_inverse_cipher(uint8_t *buf, uint32_t *kschd, size_t Nk, size_t Nb, size_t Nr);
 
@@ -56,6 +52,7 @@ static void   uaes_inverse_cipher(uint8_t *buf, uint32_t *kschd, size_t Nk, size
  * @return uint8_t Returns current trace mask.
  */
 #ifdef __uAES_DEBUG__
+int     debug_line  = 0;
 uint8_t uaes_set_trace_msk(unsigned char msk)
 {
   trace_msk |= msk;
@@ -79,40 +76,19 @@ static size_t uaes_strnlen(char *str, size_t lim)
 }
 
 /**
- * @brief Sets Key-Block-Round combination for given length.
- * @param crypto_mode  Cryptography mode, can be UAES128, UAES192 or UAES256.
- * @param Nk        Key length in 32-bit words
- * @param Nb        Block length in 32-bit words
- * @param Nr        Number of encryption rounds.
+ * @brief Performs XOR operation between initialisation vector and data block
+ * 
+ * @param blk Pointer to data block.
+ * @param iv  Pointer to initialisation vector.
  */
-static void uaes_set_kbr(crypto_t crypto_mode, size_t *Nk, size_t *Nb, size_t *Nr)
+static void uaes_xor_iv(uint8_t *blk, uint8_t *iv)
 {
-  switch (crypto_mode)
+  for(size_t c; c < uAES_BLOCK_SIZE; c++)
   {
-    case uAES128:
-      *(Nk) = 4;
-      *(Nb) = 4;
-      *(Nr) = 10;
-      break;
-
-    case uAES192:
-      *(Nk) = 6;
-      *(Nb) = 4;
-      *(Nr) = 12;
-      break;
-    
-    case uAES256:
-      *(Nk) = 8;
-      *(Nb) = 4;
-      *(Nr) = 14;
-      break;
-  
-    default:
-      uAES_TRACE(uAES_TRACE_MSK_TRACE, "Invalid argument \"length\" was provided. Using 256-bit key length.");
-      *(Nk) = 8;
-      *(Nb) = 4;
-      *(Nr) = 14;
-      break;
+    blk[4*c + 0] ^= iv[4*c + 0];
+    blk[4*c + 1] ^= iv[4*c + 1];   
+    blk[4*c + 2] ^= iv[4*c + 2];
+    blk[4*c + 3] ^= iv[4*c + 3];
   }
   return;
 }
@@ -190,6 +166,94 @@ static void uaes_inverse_cipher(uint8_t *buf, uint32_t *kschd, size_t Nk, size_t
   return;
 }
 
+int uaes_cbc_encryption(uint8_t   *plaintext, 
+                        size_t    plaintext_size, 
+                        uint8_t   *key, 
+                        uint8_t   *init_vec,
+                        crypto_t  aes_mode)
+{
+  int       err = -1;
+  uint8_t   iv[uAES_BLOCK_SIZE]        = {0};
+  uint32_t  kschd[uAES_MAX_KSCHD_SIZE] = {0};
+  size_t Nk, Nb, Nr, idx = 0, offset = plaintext_size;
+
+  if(0 != (plaintext_size & uAES_BLOCK_ALIGN_MASK))
+  {
+    offset = uAES_ALIGN(plaintext_size, uAES_BLOCK_ALIGN);
+  }
+  offset >>= 4UL;
+
+  Nk = (uAES128 == aes_mode)?(4UL ):((uAES192 == aes_mode)?(6UL ):((uAES256 == aes_mode)?(8UL ):(0UL)));
+  Nr = (uAES128 == aes_mode)?(10UL):((uAES192 == aes_mode)?(12UL):((uAES256 == aes_mode)?(14UL):(0UL)));
+  Nb = 4UL;
+
+  if((NULL != key)                           && 
+     (NULL != plaintext)                     &&
+     (NULL != init_vec)                      && 
+     (0 < plaintext_size)                    && 
+     (uAES_MAX_INPUT_SIZE >= plaintext_size) && 
+     (uAESRGE > aes_mode))
+  {
+    key_expansion(key, kschd, Nk, (Nb*(Nr+1)));
+    uaes_xor_iv(plaintext, init_vec);
+    while(offset > idx)
+    {
+      uaes_foward_cipher(&plaintext[uAES_BLOCK_SIZE*idx], kschd, Nk, Nb, Nr);
+      idx++;
+      uaes_xor_iv(&plaintext[uAES_BLOCK_SIZE*idx], &plaintext[uAES_BLOCK_SIZE*(idx-1)]);
+    }
+    err = 0;
+  }
+  return err;
+}
+
+int uaes_cbc_decryption(uint8_t   *plaintext, 
+                        size_t    plaintext_size, 
+                        uint8_t   *key, 
+                        uint8_t   *init_vec,
+                        crypto_t  aes_mode)
+{
+  int       err = -1;
+  uint8_t   iv[uAES_BLOCK_SIZE]        = {0};
+  uint32_t  kschd[uAES_MAX_KSCHD_SIZE] = {0};
+  size_t Nk, Nb, Nr, idx = 0, offset = plaintext_size;
+
+  if(0 != (plaintext_size & uAES_BLOCK_ALIGN_MASK))
+  {
+    offset = uAES_ALIGN(plaintext_size, uAES_BLOCK_ALIGN);
+  }
+  offset >>= 4UL;
+
+  Nk = (uAES128 == aes_mode)?(4UL ):((uAES192 == aes_mode)?(6UL ):((uAES256 == aes_mode)?(8UL ):(0UL)));
+  Nr = (uAES128 == aes_mode)?(10UL):((uAES192 == aes_mode)?(12UL):((uAES256 == aes_mode)?(14UL):(0UL)));
+  Nb = 4UL;
+
+  if((NULL != key)                           && 
+     (NULL != plaintext)                     &&
+     (NULL != init_vec)                      && 
+     (0 < plaintext_size)                    && 
+     (uAES_MAX_INPUT_SIZE >= plaintext_size) && 
+     (uAESRGE > aes_mode))
+  {
+    idx = offset - 1UL;
+    key_expansion(key, kschd, Nk, (Nb*(Nr+1)));
+    while(idx > 0)
+    {
+      uaes_inverse_cipher(&plaintext[uAES_BLOCK_SIZE*idx], kschd, Nk, Nb, Nr);
+      uaes_xor_iv(&plaintext[uAES_BLOCK_SIZE*idx], &plaintext[uAES_BLOCK_SIZE*(idx-1)]);
+      idx--;
+    }
+    uaes_foward_cipher(&plaintext[uAES_BLOCK_SIZE*idx], kschd, Nk, Nb, Nr);
+    uaes_xor_iv(&plaintext[uAES_BLOCK_SIZE*(idx)], init_vec);
+    err = 0;
+  }
+  return err;
+}
+
+
+
+
+
 /**
  * NOTE: AES-ECB IS NO LONGER CONSIDERED SAFE, USE IT AT YOUR OWN RISK.
  * 
@@ -199,21 +263,18 @@ static void uaes_inverse_cipher(uint8_t *buf, uint32_t *kschd, size_t Nk, size_t
  * @param plaintext_size  Size of plaintext buffer.
  * @param key             Pointer to key buffer.
  * @param key_buffer_size Size of key buffer.
- * @param crypto_mode     Encryption/Decryption mode. 
+ * @param aes_mode        Encryption/Decryption mode. 
  * @return int [ 0] if sucessful.
  *             [-1] on failure. 
  */
-int uaes_ecb_encryption(uint8_t *plaintext, 
-                        size_t   plaintext_size, 
-                        uint8_t *key, 
-                        size_t   key_buffer_size, 
-                        crypto_t crypto_mode)
+int uaes_ecb_encryption(uint8_t   *plaintext, 
+                        size_t    plaintext_size, 
+                        uint8_t   *key, 
+                        crypto_t  aes_mode)
 {
   int err = -1;
-  uint32_t kschd[uAES_MAX_KSCHD_SIZE] = {0};
-  size_t idx = 0;
-  size_t Nk, Nb, Nr;
-  size_t offset = plaintext_size;
+  uint32_t kschd[uAES_MAX_KSCHD_SIZE] = {0}; 
+  size_t Nk, Nb, Nr, idx = 0, offset = plaintext_size;
 
   if(0 != (plaintext_size & uAES_BLOCK_ALIGN_MASK))
   {
@@ -221,17 +282,15 @@ int uaes_ecb_encryption(uint8_t *plaintext,
   }
   offset >>= 4UL;
 
-  /* Heard you like ternary operators, so I put a ternary operator inside a ternary operator inside a ternary operator...*/
-  Nk =    (uAES128 == crypto_mode) ? (4UL) : ((uAES192 == crypto_mode)?(6UL):((uAES256 == crypto_mode)?(8UL):(0UL)));
-  Nr =    (uAES128 == crypto_mode) ? (10UL) : ((uAES192 == crypto_mode)?(12UL):((uAES256 == crypto_mode)?(14UL):(0UL)));
-  Nb =    4UL;
+  Nk = (uAES128 == aes_mode)?(4UL ):((uAES192 == aes_mode)?(6UL ):((uAES256 == aes_mode)?(8UL ):(0UL)));
+  Nr = (uAES128 == aes_mode)?(10UL):((uAES192 == aes_mode)?(12UL):((uAES256 == aes_mode)?(14UL):(0UL)));
+  Nb = 4UL;
 
   if((NULL != key)                           && 
      (NULL != plaintext)                     && 
      (0 < plaintext_size)                    && 
      (uAES_MAX_INPUT_SIZE >= plaintext_size) && 
-     (key_buffer_size == (4*Nk))             &&
-     (uAESRGE > crypto_mode))
+     (uAESRGE > aes_mode))
   {
     key_expansion(key, kschd, Nk, (Nb*(Nr+1)));
     while(offset > idx)
@@ -253,21 +312,18 @@ int uaes_ecb_encryption(uint8_t *plaintext,
  * @param ciphertext_size Size of ciphertext buffer.
  * @param key             Pointer to key buffer.
  * @param key_buffer_size Size of key buffer.
- * @param crypto_mode     Encryption/Decryption mode. 
+ * @param aes_mode        Encryption/Decryption mode. 
  * @return int [ 0] if sucessful.
  *             [-1] on failure. 
  */
-int uaes_ecb_decryption(uint8_t *ciphertext, 
-                        size_t   ciphertext_size, 
-                        uint8_t *key, 
-                        size_t   key_buffer_size, 
-                        crypto_t crypto_mode)
+int uaes_ecb_decryption(uint8_t   *ciphertext, 
+                        size_t    ciphertext_size, 
+                        uint8_t   *key, 
+                        crypto_t  aes_mode)
 {
   int err = -1;
   uint32_t kschd[uAES_MAX_KSCHD_SIZE] = {0};
-  size_t idx = 0;
-  size_t Nk, Nb, Nr;
-  size_t offset = ciphertext_size;
+  size_t Nk, Nb, Nr, idx = 0, offset = ciphertext_size;
 
   if(0 != (ciphertext_size & uAES_BLOCK_ALIGN_MASK))
   {
@@ -275,17 +331,15 @@ int uaes_ecb_decryption(uint8_t *ciphertext,
   }
   offset >>= 4UL;
 
-  /* Heard you like ternary operators, so I put a ternary operator inside a ternary operator inside a ternary operator...*/
-  Nk =    (uAES128 == crypto_mode) ? (4UL) : ((uAES192 == crypto_mode)?(6UL):((uAES256 == crypto_mode)?(8UL):(0UL)));
-  Nr =    (uAES128 == crypto_mode) ? (10UL) : ((uAES192 == crypto_mode)?(12UL):((uAES256 == crypto_mode)?(14UL):(0UL)));
-  Nb =    4UL;
+  Nk = (uAES128 == aes_mode)?(4UL ):((uAES192 == aes_mode)?(6UL ):((uAES256 == aes_mode)?(8UL ):(0UL)));
+  Nr = (uAES128 == aes_mode)?(10UL):((uAES192 == aes_mode)?(12UL):((uAES256 == aes_mode)?(14UL):(0UL)));
+  Nb = 4UL;
 
-  if((NULL != key)                           && 
+  if((NULL != key)                            && 
      (NULL != ciphertext)                     && 
      (0 < ciphertext_size)                    && 
      (uAES_MAX_INPUT_SIZE >= ciphertext_size) && 
-     (key_buffer_size == (4*Nk))             &&
-     (uAESRGE > crypto_mode))
+     (uAESRGE > aes_mode))
   {
     key_expansion(key, kschd, Nk, (Nb*(Nr+1)));
     while(offset > idx)
