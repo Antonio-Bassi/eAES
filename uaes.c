@@ -71,7 +71,7 @@ uint8_t uaes_set_trace_msk(unsigned char msk)
 static size_t uaes_strnlen(char *str, size_t lim)
 {
   size_t s = 0;
-  if(( NULL != str) && (0 < lim))
+  if(( NULL != str) && (s < lim))
   {
     for(s = 0; ((s < lim)&&(str[s] != 0x00)); s++);
   }
@@ -301,8 +301,8 @@ int uaes_ecb_decryption(uint8_t *ciphertext,
 /**
  * @brief Computes AES-128 encryption on a single 16 byte plaintext block.
  * 
- * @param plaintext       Pointer to plaintext buffer
- * @param key             Pointer to key buffer
+ * @param plaintext       Pointer to plaintext buffer.
+ * @param key             Pointer to key buffer.
  * @param plaintext_size  Plaintext buffer size.
  * @return int [ 0] if sucessful.
  *             [-1] on failure. 
@@ -324,8 +324,8 @@ int uaes128enc(uint8_t *plaintext, uint8_t *key, size_t plaintext_size)
 /**
  * @brief Computes AES-192 encryption on a single 16 byte plaintext block.
  * 
- * @param plaintext       Pointer to plaintext buffer
- * @param key             Pointer to key buffer
+ * @param plaintext       Pointer to plaintext buffer.
+ * @param key             Pointer to key buffer.
  * @param plaintext_size  Plaintext buffer size.
  * @return int [ 0] if sucessful.
  *             [-1] on failure. 

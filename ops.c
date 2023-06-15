@@ -97,21 +97,10 @@ static inline uint8_t inv_circ_shift(uint8_t byte, size_t nshifts)
 static uint8_t gf256_mul(uint8_t Na, uint8_t Nb)
 {
   uint8_t prod = 0x00;
-  while( ( Na != 0 ) && ( Nb != 0 ) )
+  for(;Nb; Nb >>=1)
   {
-    if( Nb & 0x01 )
-    {
-      prod ^= Na;
-    }
-    if( Na & 0x80 )
-    {
-      Na = ( Na << 1 ) ^ rijndael_polynomial;
-    }
-    else
-    {
-      Na <<= 1;
-    }
-    Nb >>= 1;
+    prod ^= (Nb & 0x01)?(Na):(0x00);
+    Na    = (Na & 0x80)?((Na << 1)^rijndael_polynomial):(Na << 1);
   }
   return prod;
 }
@@ -142,12 +131,9 @@ static uint8_t gf256_inv(uint8_t Na)
  */
 static uint32_t rcon(uint8_t val)
 {
-  if( val == 9 )
-    return 0x1b;
-  else if( val == 10 )
-    return 0x36;
-  else
-    return ( 0x01 << ( val - 1 ) );
+  uint32_t rconst = 0;
+  rconst = (val == 9)?(0x1b000000):((val == 10)?(0x36000000):(0x01000000 << (val - 1)));
+  return rconst;
 }
 
 /**
