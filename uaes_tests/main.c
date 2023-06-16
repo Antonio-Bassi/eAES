@@ -127,16 +127,27 @@ static void xprintmat(uint8_t *buf, size_t buf_size)
   return;
 }
 
-#define ARG_MSK_PLAINTEXT   0b00000001
-#define ARG_MSK_KEY         0b00000010
-#define ARG_MSK_CRYPTOTYPE  0b00000100
+#define LSB                 (0b00000001)
+#define ARG_MSK_PLAINTEXT   (LSB << 0UL)
+#define ARG_MSK_KEY         (LSB << 1UL)
+#define ARG_MSK_CRYPTOTYPE  (LSB << 2UL)
+#define ARG_MSK_CIPHERTYPE  (LSB << 3UL)
+
+typedef enum
+{
+  uAES_ECB  = 0,
+  uAES_CBC  = 1,
+  uAES_PCBC = 2,
+  uAES_CFB  = 3
+}cipher_t;
 
 int main(int argc, char **argv)
 {
   const int min_args = 3;
   int     arg =  1;
   int     err = -1;
-  uint8_t argmsk = 0x00;
+  uint8_t   argmsk = 0x00;
+  cipher_t  cipher_mode = uAES_ECB;
   crypto_t  encryption_type = uAES128;
   size_t    aligned_size = 0;
   size_t    padding_size = 0;
@@ -161,7 +172,7 @@ int main(int argc, char **argv)
         key_buffer_size = __strnlen(argv[arg], MAX_KEYSTR);
         memcpy((void *)key, (void *)argv[arg], key_buffer_size);
       }
-      else if((0 == strcmp(argv[arg],"-p")) && (0 == (argmsk & ARG_MSK_PLAINTEXT)))
+      else if((0 == strcmp(argv[arg], "-p")) && (0 == (argmsk & ARG_MSK_PLAINTEXT)))
       {
         argmsk = ((argmsk & (~ARG_MSK_PLAINTEXT)) | (ARG_MSK_PLAINTEXT));
         arg++;
@@ -189,6 +200,31 @@ int main(int argc, char **argv)
           encryption_type = encryption_type;
         }
       }
+      else if((0 == strcmp(argv[arg], "-c")) && (0 == (argmsk & ARG_MSK_CIPHERTYPE)))
+      {
+        argmsk = ((argmsk & (~ARG_MSK_CIPHERTYPE)) | (ARG_MSK_CIPHERTYPE));
+        arg++;
+        if(0 == strcmp(argv[arg], "ECB"))
+        {
+          cipher_mode = uAES_ECB;
+        }
+        else if(0 == strcmp(argv[arg], "CBC"))
+        {
+          cipher_mode = uAES_CBC;
+        }
+        else if(0 == strcmp(argv[arg], "PCBC"))
+        {
+          // TODO: Yet to implement, ignore for now.
+        }
+        else if(0 == strcmp(argv[arg], "CFB"))
+        {
+          // TODO: Yet to implement, ignore fow now.
+        }  
+        else
+        {
+          cipher_mode = uAES_ECB;
+        }
+      }
       arg++;
     }
 
@@ -211,35 +247,94 @@ int main(int argc, char **argv)
 
     printf("Received input: ");
     printhex(in, input_size);
+    printf("Received key: ");
+    printhex(key, key_buffer_size);
     printf("Total plaintext blocks: ");
     xprintmat(in, input_size);
     
     switch (encryption_type)
     {
       case uAES128:
-        err = uaes_cbc_encryption(in, input_size, key, input_aes128, encryption_type);
-        printf("AES128 Encrypted plaintext blocks: ");
-        xprintmat(in, input_size);
-        err = uaes_cbc_decryption(in, input_size, key, input_aes128, encryption_type);
-        printf("AES128 Decrypted plaintext blocks: ");
-        xprintmat(in, input_size);
+      {
+        switch (cipher_mode)
+        {
+          case uAES_ECB:
+          {
+            err = uaes_ecb_encryption(in, input_size, key, encryption_type);
+            printf("AES128-ECB Encrypted plaintext blocks: ");
+            xprintmat(in, input_size);
+            err = uaes_ecb_decryption(in, input_size, key, encryption_type);
+            printf("AES128-ECB Decrypted plaintext blocks: ");
+            xprintmat(in, input_size);
+            break;
+          }
+          case uAES_CBC:
+          {
+            err = uaes_cbc_encryption(in, input_size, key, input_aes128, encryption_type);
+            printf("AES128-CBC Encrypted plaintext blocks: ");
+            xprintmat(in, input_size);
+            err = uaes_cbc_decryption(in, input_size, key, input_aes128, encryption_type);
+            printf("AES128-CBC Decrypted plaintext blocks: ");
+            xprintmat(in, input_size);
+            break;
+          }
+        }
         break;
+      }
       case uAES192:
-        err = uaes_cbc_encryption(in, input_size, key, input_aes192, encryption_type);
-        printf("AES192 Encrypted plaintext blocks: ");
-        xprintmat(in, input_size);
-        err = uaes_cbc_decryption(in, input_size, key, input_aes192, encryption_type);
-        printf("AES192 Decrypted plaintext blocks: ");
-        xprintmat(in, input_size);
+      {
+        switch(cipher_mode)
+        {
+          case uAES_ECB:
+          {
+            err = uaes_ecb_encryption(in, input_size, key, encryption_type);
+            printf("AES192-ECB Encrypted plaintext blocks: ");
+            xprintmat(in, input_size);
+            err = uaes_ecb_decryption(in, input_size, key, encryption_type);
+            printf("AES192-ECB Decrypted plaintext blocks: ");
+            xprintmat(in, input_size);
+            break;
+          }
+          case uAES_CBC:
+          {
+            err = uaes_cbc_encryption(in, input_size, key, input_aes192, encryption_type);
+            printf("AES192-CBC Encrypted plaintext blocks: ");
+            xprintmat(in, input_size);
+            err = uaes_cbc_decryption(in, input_size, key, input_aes192, encryption_type);
+            printf("AES192-CBC Decrypted plaintext blocks: ");
+            xprintmat(in, input_size);
+            break;
+          }
+        }
         break;
+      }
       case uAES256:
-        err = uaes_cbc_encryption(in, input_size, key, input_aes256, encryption_type);
-        printf("AES256 Encrypted plaintext blocks: ");
-        xprintmat(in, input_size);
-        err = uaes_cbc_decryption(in, input_size, key, input_aes256, encryption_type);
-        printf("AES256 Decrypted plaintext blocks: ");
-        xprintmat(in, input_size);
+      {
+        switch(cipher_mode)
+        {
+          case uAES_ECB:
+          {
+            err = uaes_ecb_encryption(in, input_size, key, encryption_type);
+            printf("AES256-ECB Encrypted plaintext blocks: ");
+            xprintmat(in, input_size);
+            err = uaes_ecb_decryption(in, input_size, key, encryption_type);
+            printf("AES256-ECB Decrypted plaintext blocks: ");
+            xprintmat(in, input_size);
+            break;
+          }
+          case uAES_CBC:
+          {
+            err = uaes_cbc_encryption(in, input_size, key, input_aes256, encryption_type);
+            printf("AES256-CBC Encrypted plaintext blocks: ");
+            xprintmat(in, input_size);
+            err = uaes_cbc_decryption(in, input_size, key, input_aes256, encryption_type);
+            printf("AES256-CBC Decrypted plaintext blocks: ");
+            xprintmat(in, input_size);
+            break;
+          }   
+        }
         break;
+      }
       default:
         break;
     }

@@ -83,7 +83,7 @@ static size_t uaes_strnlen(char *str, size_t lim)
  */
 static void uaes_xor_iv(uint8_t *blk, uint8_t *iv)
 {
-  for(size_t c; c < uAES_BLOCK_SIZE; c++)
+  for(size_t c = 0UL; c < 4UL; c++)
   {
     blk[4*c + 0] ^= iv[4*c + 0];
     blk[4*c + 1] ^= iv[4*c + 1];   
@@ -249,10 +249,6 @@ int uaes_cbc_decryption(uint8_t   *plaintext,
   }
   return err;
 }
-
-
-
-
 
 /**
  * NOTE: AES-ECB IS NO LONGER CONSIDERED SAFE, USE IT AT YOUR OWN RISK.
