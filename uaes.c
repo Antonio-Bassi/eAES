@@ -19,8 +19,6 @@
 #include <string.h>
 
 #include "uaes.h"
-#include "udbg.h"
-#include "umem.h"
 #include "ops.h"
 
 #define uAES_HEADER_KEY_MSK   (0xFF00)

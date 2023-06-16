@@ -5,9 +5,7 @@
 #include <string.h>
 #include <termios.h>
 
-#include "../umem.h"
 #include "../uaes.h"
-#include "../udbg.h"
 #include "nist_fips197_luts.h"
 
 #define MAX_DIRSTR    255UL
