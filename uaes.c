@@ -243,7 +243,7 @@ int uaes_cbc_decryption(uint8_t   *plaintext,
       uaes_xor_iv(&plaintext[uAES_BLOCK_SIZE*idx], &plaintext[uAES_BLOCK_SIZE*(idx-1)]);
       idx--;
     }
-    uaes_foward_cipher(&plaintext[uAES_BLOCK_SIZE*idx], kschd, Nk, Nb, Nr);
+    uaes_inverse_cipher(&plaintext[uAES_BLOCK_SIZE*idx], kschd, Nk, Nb, Nr);
     uaes_xor_iv(&plaintext[uAES_BLOCK_SIZE*(idx)], init_vec);
     err = 0;
   }
