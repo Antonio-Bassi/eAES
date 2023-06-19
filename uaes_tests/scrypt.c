@@ -124,22 +124,84 @@ static void xprintmat(uint8_t *buf, size_t buf_size)
   return;
 }
 
+typedef struct header
+{             
+  uint32_t  id;                       
+  uint32_t  size;                     
+  uint32_t  rsvd;                     
+  uint32_t  offset;                   
+  uint32_t  dib_header_size;          
+  uint32_t  width_px;                 
+  uint32_t  height_px;                
+  uint16_t  num_planes;               
+  uint16_t  bits_per_pixel;           
+  uint32_t  compression;              
+  uint32_t  image_size_bytes;         
+  uint32_t   x_resolution_ppm;        
+  uint32_t   y_resolution_ppm;        
+  uint32_t  num_colors;               
+  uint32_t  important_colors;         
+  uint32_t  red_ch_bitmask;           
+  uint32_t  green_ch_bitmask;         
+  uint32_t  blue_ch_bitmask;          
+  uint32_t  alpha_ch_bitmask;         
+  uint32_t  color_space_type;         
+  uint32_t  color_space_endpts[9UL];  
+  uint32_t  red_gamma_lvl;            
+  uint32_t  green_gamma_lvl;          
+  uint32_t  blue_gamma_lvl;           
+  uint32_t  intent;
+  uint32_t  icc_profile_data;
+  uint32_t  icc_profile_size;
+  uint32_t  reserved3;  
+}header_t;
+
+typedef struct bmp
+{
+  header_t header;  // file header
+  uint8_t  *px;     // Pixel array
+}bmp_t;
+
+int bmp_little2big(uint32_t *ptr, size_t length)
+{
+  int err = -1;
+  uint32_t b0, b1, b2, b3;
+  if((NULL != ptr)&&(0 < length))
+  {
+    for(size_t w = 0; w < length; w++)
+    {
+      b0 = ((ptr[w] & 0x000000FF) << 24UL);
+      b1 = ((ptr[w] & 0x0000FF00) << 8UL );
+      b2 = ((ptr[w] & 0x00FF0000) >> 8UL);
+      b3 = ((ptr[w] & 0xFF000000) >> 24UL);
+
+      ptr[w] = (b0 | b1 | b2 | b3);
+    }
+    err = 0;
+  }
+  return err;
+}
+
+
 int main(int argc, char **argv)
 {
-  BMP* img = NULL;
   char path[MAX_FPATHSTR] = {0};
   crypto_t encryption_type = uAES128;
   cipher_t cipher_mode     = uAES_ECB;
   int err = 0;
   int arg = 0;
-  uint32_t argmsk = 0;
-  size_t  key_buf_size = 0;
-  size_t  aligned_size = 0;
-  size_t  padding_size = 0;
-  size_t  img_buf_size = 0;
+  uint32_t argmsk         = 0;
+  size_t  key_buf_size    = 0;
+  size_t  aligned_size    = 0;
+  size_t  padding_size    = 0;
+  size_t  img_px_size     = 0;
+  size_t  aligned_px_size = 0;
+  size_t  i = 0;
   uint8_t z1 = 0, z2 = 0;
   uint8_t key[MAX_KEYSIZE];
-  uint8_t *crypbuf = NULL;
+
+  FILE *fstream = NULL;
+  bmp_t *img    = NULL; 
 
   if(1UL < argc)
   {
@@ -208,16 +270,33 @@ int main(int argc, char **argv)
       key_buf_size = aligned_size;
     }
 
-    img = bopen(path);
-    img_buf_size = img->file_byte_number - img->pixel_array_start;
-    if( 0 != (img_buf_size & uAES_BLOCK_ALIGN_MASK) )
+    fstream = fopen(path, "rb+");
+    if(NULL != fstream)
     {
-      img_buf_size = uAES_ALIGN(img_buf_size, uAES_BLOCK_ALIGN);
+      img = (bmp_t *)malloc(sizeof(bmp_t));
+      if(NULL != img)
+      {
+        fseek(fstream, 0UL, SEEK_SET);
+        fread((void *)&img->header, 4UL, 28UL, fstream);
+        bmp_little2big((uint32_t *)&img->header, 28UL);
+        img_px_size = (size_t)(img->header.width_px * img->header.height_px);
+        aligned_px_size = uAES_ALIGN(img_px_size, uAES_BLOCK_ALIGN);
+        img->px = (uint8_t *)calloc(1UL, aligned_px_size);
+        if(NULL != img->px)
+        {
+          fseek(fstream, img->header.offset, SEEK_SET);
+          while( (EOF != fscanf(fstream, "%c", &img->px[i])) && (i < aligned_px_size))
+          {
+            i++;
+          }
+          aligned_px_size = uAES_ALIGN(i, uAES_BLOCK_ALIGN);
+          img->px =(uint8_t *) realloc((void *)img->px, aligned_px_size);
+        }
+      }
     }
-    crypbuf = calloc(1UL, img_buf_size);
-    if( NULL != crypbuf )
+
+    if( NULL != img->px )
     {
-      memcpy((void *) crypbuf, (void *)(img->file_byte_contents + img->pixel_array_start), (img->file_byte_number - img->pixel_array_start));
       switch (encryption_type)
       {
         case uAES128:
@@ -226,12 +305,12 @@ int main(int argc, char **argv)
           {
             case uAES_ECB:
             {
-              err = uaes_ecb_encryption(crypbuf, img_buf_size, key, encryption_type);
+              err = uaes_ecb_encryption(img->px, aligned_px_size, key, encryption_type);
               break;
             }
             case uAES_CBC:
             {
-              err = uaes_cbc_encryption(crypbuf, img_buf_size, key, input_aes128, encryption_type);
+              err = uaes_cbc_encryption(img->px, aligned_px_size, key, input_aes128, encryption_type);
               break;
             }
           }
@@ -243,12 +322,12 @@ int main(int argc, char **argv)
           {
             case uAES_ECB:
             {
-              err = uaes_ecb_encryption(crypbuf, img_buf_size, key, encryption_type);
+              err = uaes_ecb_encryption(img->px, aligned_px_size, key, encryption_type);
               break;
             }
             case uAES_CBC:
             {
-              err = uaes_cbc_encryption(crypbuf, img_buf_size, key, input_aes192, encryption_type);
+              err = uaes_cbc_encryption(img->px, aligned_px_size, key, input_aes192, encryption_type);
               break;
             }
           }
@@ -260,12 +339,12 @@ int main(int argc, char **argv)
           {
             case uAES_ECB:
             {
-              err = uaes_ecb_encryption(crypbuf, img_buf_size, key, encryption_type);
+              err = uaes_ecb_encryption(img->px, aligned_px_size, key, encryption_type);
               break;
             }
             case uAES_CBC:
             {
-              err = uaes_cbc_encryption(crypbuf, img_buf_size, key, input_aes256, encryption_type);
+              err = uaes_cbc_encryption(img->px, aligned_px_size, key, input_aes256, encryption_type);
               break;
             }   
           }
@@ -274,13 +353,11 @@ int main(int argc, char **argv)
         default:
           break;
       }/*switch (encryption_type)*/
-      memcpy((void *)(img->file_byte_contents + img->pixel_array_start), (void *) crypbuf,  (img->file_byte_number - img->pixel_array_start));
-      bwrite(img, "res.bmp");
-      bclose(img);
-      free(crypbuf);
-    }/*if( NULL != crypbuf )*/ 
-
-
+      fwrite(img->px, 1UL, aligned_px_size, fstream);
+      free(img->px);
+    }/*if( NULL != img->px )*/ 
+    fclose(fstream);
+    free(img);
   }/*if(1UL < argc)*/
   return err;
 }
