@@ -141,6 +141,18 @@ int main(int argc, char **argv)
         argmsk = ((argmsk & (~ARG_MSK_MODE)) | (ARG_MSK_MODE));
         operation_mode = uAES_DECRYPT;
       }
+      else if(0 == strcmp(argv[arg], "-h"))
+      {
+        printf("scrypt: Test script for uAES API, applies AES encryption on bitmap image files.\n");
+        printf("usage: scrypt -f [FILENAME] -o [OUTPUT FILE] [PARAMETERS]\n");
+        printf("Takes following arguments:\n\"-f\", file name with extension.\n\"-o\", output file name with extension.\n");
+        printf("\"-k\", AES key value, if lenght is less than the specified in argument \"-t\" padding is applied.\n");
+        printf("\"-t\", Cryptography mode, can be 128, 192 or 256.\n");
+        printf("\"-c\", Cipher mode, can be EBC or CBC.\n");
+        printf("\"-d\", Specifies decryption operation. If nothing is specified, encryption is performed.\n");
+        printf("example: scrypt -f \"yourpic.bmp\" -o \"res.bmp\" -k \"youarebeautiful!\" -t 128 -c ECB\n\n");
+        exit(EXIT_SUCCESS);
+      }
       arg++;
     }
   
