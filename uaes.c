@@ -171,7 +171,6 @@ int uaes_cbc_encryption(uint8_t   *plaintext,
                         crypto_t  aes_mode)
 {
   int       err = -1;
-  uint8_t   iv[uAES_BLOCK_SIZE]        = {0};
   uint32_t  kschd[uAES_MAX_KSCHD_SIZE] = {0};
   size_t Nk, Nb, Nr, idx = 0, offset = plaintext_size;
 
@@ -198,7 +197,10 @@ int uaes_cbc_encryption(uint8_t   *plaintext,
     {
       uaes_foward_cipher(&plaintext[uAES_BLOCK_SIZE*idx], kschd, Nk, Nb, Nr);
       idx++;
-      uaes_xor_iv(&plaintext[uAES_BLOCK_SIZE*idx], &plaintext[uAES_BLOCK_SIZE*(idx-1)]);
+      if(offset > idx)
+      {
+        uaes_xor_iv(&plaintext[uAES_BLOCK_SIZE*idx], &plaintext[uAES_BLOCK_SIZE*(idx-1)]);
+      }
     }
     err = 0;
   }
