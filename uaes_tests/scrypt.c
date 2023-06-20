@@ -62,8 +62,8 @@ int main(int argc, char **argv)
   char path[MAX_FPATHSTR] = {0};
   char outf[MAX_FPATHSTR] = {0};
   uaes_mode_t operation_mode  = uAES_ENCRYPT;
-  crypto_t encryption_type = uAES128;
-  cipher_t cipher_mode     = uAES_ECB;
+  crypto_t encryption_type    = uAES128;
+  cipher_t cipher_mode        = uAES_ECB;
   int err = 0;
   int arg = 0;
   uint32_t argmsk         = 0;
