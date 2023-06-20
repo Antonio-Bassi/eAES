@@ -1,0 +1,3 @@
+[submodule "uaes_tests/cbmp"]
+	path = uaes_tests/cbmp
+	url = https://github.com/mattflow/cbmp.git
