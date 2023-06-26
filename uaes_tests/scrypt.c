@@ -76,7 +76,7 @@ int main(int argc, char **argv)
   size_t  w = 0, h = 0;
   uint8_t *iv = NULL;
   uint8_t *r = NULL, *g = NULL, *b = NULL;
-  uint8_t key[MAX_KEYSIZE];
+  uint8_t key[MAX_KEYSIZE] = {0};
   BMP *img    = NULL; 
 
   if(1UL < argc)
@@ -162,6 +162,21 @@ int main(int argc, char **argv)
       padding_size = aligned_size - key_buf_size;
       for(size_t padpos = 0; padpos < padding_size; padpos++)
       {
+        /**
+         * NOTE: This padding is a 2's complement checksum from the initial bytes
+         *       involving delay buffers following the flow below:
+         *      
+         *                          k[n-1]     k[n-2]
+         *        k[n] ----+---[ z ]--+--[ z ]----
+         *                 |          |          |      0x01
+         *                 |          v          |        |
+         *                 |________>(+)<________|        |
+         *                            |                   v
+         *                            |__________[ ~ ]___(+)____> p[n]
+         * 
+         *  IT SHOULD NOT be used is a padding algorithm as this can be easily used to
+         *  figure out the user's key by using the reverse checksum formula.
+         */
         key[key_buf_size + padpos] = ~(key[padpos] + z1) + 1;
         z1 = key[padpos] + z2;
         z2 = key[padpos];

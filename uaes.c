@@ -164,6 +164,17 @@ static void uaes_inverse_cipher(uint8_t *buf, uint32_t *kschd, size_t Nk, size_t
   return;
 }
 
+/**
+ * @brief Performs AES Cipher Block Chaining encryption on given plaintext.
+ * 
+ * @param plaintext       Pointer to plaintext buffer
+ * @param plaintext_size  Plaintext buffer size.
+ * @param key             Pointer to key buffer.
+ * @param init_vec        16-Byte Initialisation vector.
+ * @param aes_mode        Encryption/Decryption mode.
+ * @return int [ 0] if sucessful.
+ *             [-1] on failure. 
+ */
 int uaes_cbc_encryption(uint8_t   *plaintext, 
                         size_t    plaintext_size, 
                         uint8_t   *key, 
@@ -193,34 +204,43 @@ int uaes_cbc_encryption(uint8_t   *plaintext,
   {
     key_expansion(key, kschd, Nk, (Nb*(Nr+1)));
     uaes_xor_iv(plaintext, init_vec);
+    uaes_foward_cipher(&plaintext[uAES_BLOCK_SIZE*idx], kschd, Nk, Nb, Nr);
+    idx++;
     while(offset > idx)
     {
+      uaes_xor_iv(&plaintext[uAES_BLOCK_SIZE*idx], &plaintext[uAES_BLOCK_SIZE*(idx-1)]);
       uaes_foward_cipher(&plaintext[uAES_BLOCK_SIZE*idx], kschd, Nk, Nb, Nr);
       idx++;
-      if(offset > idx)
-      {
-        uaes_xor_iv(&plaintext[uAES_BLOCK_SIZE*idx], &plaintext[uAES_BLOCK_SIZE*(idx-1)]);
-      }
     }
     err = 0;
   }
   return err;
 }
 
-int uaes_cbc_decryption(uint8_t   *plaintext, 
-                        size_t    plaintext_size, 
+/**
+ * @brief Performs AES Cipher Block Chaining decryption on given ciphertext 
+ * 
+ * @param ciphertext      Pointer to ciphertext buffer.
+ * @param ciphertext_size Ciphertext buffer size.
+ * @param key             Pointer to key buffer.
+ * @param init_vec        16-Byte initialisation vector.
+ * @param aes_mode        Encryption/Decryption mode.
+ * @return int [ 0] if sucessful.
+ *             [-1] on failure. 
+ */
+int uaes_cbc_decryption(uint8_t   *ciphertext, 
+                        size_t    ciphertext_size, 
                         uint8_t   *key, 
                         uint8_t   *init_vec,
                         crypto_t  aes_mode)
 {
   int       err = -1;
-  uint8_t   iv[uAES_BLOCK_SIZE]        = {0};
   uint32_t  kschd[uAES_MAX_KSCHD_SIZE] = {0};
-  size_t Nk, Nb, Nr, idx = 0, offset = plaintext_size;
+  size_t Nk, Nb, Nr, idx = 0, offset = ciphertext_size;
 
-  if(0 != (plaintext_size & uAES_BLOCK_ALIGN_MASK))
+  if(0 != (ciphertext_size & uAES_BLOCK_ALIGN_MASK))
   {
-    offset = uAES_ALIGN(plaintext_size, uAES_BLOCK_ALIGN);
+    offset = uAES_ALIGN(ciphertext_size, uAES_BLOCK_ALIGN);
   }
   offset >>= 4UL;
 
@@ -228,23 +248,23 @@ int uaes_cbc_decryption(uint8_t   *plaintext,
   Nr = (uAES128 == aes_mode)?(10UL):((uAES192 == aes_mode)?(12UL):((uAES256 == aes_mode)?(14UL):(0UL)));
   Nb = 4UL;
 
-  if((NULL != key)                           && 
-     (NULL != plaintext)                     &&
-     (NULL != init_vec)                      && 
-     (0 < plaintext_size)                    && 
-     (uAES_MAX_INPUT_SIZE >= plaintext_size) && 
+  if((NULL != key)                            && 
+     (NULL != ciphertext)                     &&
+     (NULL != init_vec)                       && 
+     (0 < ciphertext_size)                    && 
+     (uAES_MAX_INPUT_SIZE >= ciphertext_size) && 
      (uAESRGE > aes_mode))
   {
     idx = offset - 1UL;
     key_expansion(key, kschd, Nk, (Nb*(Nr+1)));
     while(idx > 0)
     {
-      uaes_inverse_cipher(&plaintext[uAES_BLOCK_SIZE*idx], kschd, Nk, Nb, Nr);
-      uaes_xor_iv(&plaintext[uAES_BLOCK_SIZE*idx], &plaintext[uAES_BLOCK_SIZE*(idx-1)]);
+      uaes_inverse_cipher(&ciphertext[uAES_BLOCK_SIZE*idx], kschd, Nk, Nb, Nr);
+      uaes_xor_iv(&ciphertext[uAES_BLOCK_SIZE*idx], &ciphertext[uAES_BLOCK_SIZE*(idx-1)]);
       idx--;
     }
-    uaes_inverse_cipher(&plaintext[uAES_BLOCK_SIZE*idx], kschd, Nk, Nb, Nr);
-    uaes_xor_iv(&plaintext[uAES_BLOCK_SIZE*(idx)], init_vec);
+    uaes_inverse_cipher(&ciphertext[uAES_BLOCK_SIZE*idx], kschd, Nk, Nb, Nr);
+    uaes_xor_iv(&ciphertext[uAES_BLOCK_SIZE*idx], init_vec);
     err = 0;
   }
   return err;
@@ -253,12 +273,11 @@ int uaes_cbc_decryption(uint8_t   *plaintext,
 /**
  * NOTE: AES-ECB IS NO LONGER CONSIDERED SAFE, USE IT AT YOUR OWN RISK.
  * 
- * @brief Performs AES-ECB encryption on given plaintext.
+ * @brief Performs AES Electronic Code Book encryption on given plaintext.
  * 
  * @param plaintext       Pointer to plaintext buffer.
  * @param plaintext_size  Size of plaintext buffer.
  * @param key             Pointer to key buffer.
- * @param key_buffer_size Size of key buffer.
  * @param aes_mode        Encryption/Decryption mode. 
  * @return int [ 0] if sucessful.
  *             [-1] on failure. 
@@ -307,7 +326,6 @@ int uaes_ecb_encryption(uint8_t   *plaintext,
  * @param ciphertext      Pointer to ciphertext buffer.
  * @param ciphertext_size Size of ciphertext buffer.
  * @param key             Pointer to key buffer.
- * @param key_buffer_size Size of key buffer.
  * @param aes_mode        Encryption/Decryption mode. 
  * @return int [ 0] if sucessful.
  *             [-1] on failure. 
