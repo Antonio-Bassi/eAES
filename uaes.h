@@ -45,31 +45,33 @@
 #define uAES_MAX_KEY_SIZE     (32UL)
 #define uAES_BLOCK_SIZE       (16UL)
 
-typedef enum crypto
+typedef enum aes_length
 {
-  uAES128 = 0,  // 128 bit-sized key.
-  uAES192 = 1,  // 192 bit-sized key.
-  uAES256 = 2,  // 256 bit-sized key.
+  uAES128 = 0,  // 128 bit key length.
+  uAES192 = 1,  // 192 bit key length.
+  uAES256 = 2,  // 256 bit key length.
   uAESRGE = 3   // Range of length options
-}crypto_t;
+}aes_length_t;
 
 /* Debug */
 extern uint8_t   uaes_set_trace_msk(uint8_t msk);
 
 /* Encryption API*/
+
 /** 
  * NOTE: AES-ECB IS NO LONGER CONSIDERED SAFE, USE IT AT YOUR OWN RISK. 
  */
 extern int uaes_ecb_encryption( uint8_t   *plaintext, 
                                 size_t    plaintext_size, 
                                 uint8_t   *key, 
-                                crypto_t  crypto_mode);
+                                aes_length_t  crypto_mode);
+/* ******************************************************************** */
 
 extern int uaes_cbc_encryption( uint8_t   *plaintext, 
                                 size_t    plaintext_size, 
                                 uint8_t   *key, 
                                 uint8_t   *init_vec,
-                                crypto_t  aes_mode);
+                                aes_length_t  aes_mode);
 
 extern int uaes128enc(uint8_t *plaintext, uint8_t *key, size_t plaintext_size);
 extern int uaes192enc(uint8_t *plaintext, uint8_t *key, size_t plaintext_size);
@@ -83,13 +85,14 @@ extern int uaes256enc(uint8_t *plaintext, uint8_t *key, size_t plaintext_size);
 extern int uaes_ecb_decryption( uint8_t   *ciphertext, 
                                 size_t    ciphertext_size, 
                                 uint8_t   *key, 
-                                crypto_t  crypto_mode );
+                                aes_length_t  crypto_mode );
+/* ******************************************************************** */
 
 extern int uaes_cbc_decryption( uint8_t   *plaintext, 
                                 size_t    plaintext_size, 
                                 uint8_t   *key, 
                                 uint8_t   *init_vec,
-                                crypto_t  aes_mode );
+                                aes_length_t  aes_mode );
 
 
 extern int uaes128dec(uint8_t *ciphertext, uint8_t *key, size_t ciphertext_size);

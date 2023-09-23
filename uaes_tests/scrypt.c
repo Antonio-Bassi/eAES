@@ -75,7 +75,7 @@ int main(int argc, char **argv)
   char path[MAX_FPATHSTR] = {0};
   char outf[MAX_FPATHSTR] = {0};
   uaes_mode_t operation_mode  = uAES_ENCRYPT;
-  crypto_t encryption_type    = uAES128;
+  aes_length_t encryption_type    = uAES128;
   cipher_t cipher_mode        = uAES_ECB;
   int err = 0;
   int arg = 0;
@@ -185,7 +185,7 @@ int main(int argc, char **argv)
          *                 |          v          |        |
          *                 |________>(+)<________|        |
          *                            |                   v
-         *                            |__________[ ~ ]___(+)____> p[n]
+         *                             --------[ ~ ]-----(+)-----> p[n]
          * 
          *  IT SHOULD NOT be used is a padding algorithm as this can be easily used to
          *  figure out the user's key by using the reverse checksum formula.

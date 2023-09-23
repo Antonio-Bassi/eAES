@@ -40,7 +40,7 @@
 #define uAES256_KSCHD_SIZE    (60UL)
 #define uAES_MAX_KSCHD_SIZE   (60UL)
 
-#define uAES_HEADER_GET_CRYPTO_MODE(h)      (crypto_t)((h & uAES_HEADER_KEY_MSK) >> 8 )
+#define uAES_HEADER_GET_CRYPTO_MODE(h)      (aes_length_t)((h & uAES_HEADER_KEY_MSK) >> 8 )
 #define uAES_HEADER_GET_SIZE(h)             (size_t)((h & uAES_HEADER_SIZE_MSK) >> 0 )
 #define uAES_HEADER_PUT_CRYPTO_MODE(h, kt)  h |= (uint16_t)(((uint8_t) kt ) << 8 )
 #define uAES_HEADER_PUT_SIZE(h, l)          h |= (uint16_t)(((uint8_t) l ) << 0 )
@@ -190,7 +190,7 @@ int uaes_cbc_encryption(uint8_t   *plaintext,
                         size_t    plaintext_size, 
                         uint8_t   *key, 
                         uint8_t   *init_vec,
-                        crypto_t  aes_mode)
+                        aes_length_t  aes_mode)
 {
   int       err = -1;
   uint32_t  kschd[uAES_MAX_KSCHD_SIZE] = {0};
@@ -243,7 +243,7 @@ int uaes_cbc_decryption(uint8_t   *ciphertext,
                         size_t    ciphertext_size, 
                         uint8_t   *key, 
                         uint8_t   *init_vec,
-                        crypto_t  aes_mode)
+                        aes_length_t  aes_mode)
 {
   int       err = -1;
   uint32_t  kschd[uAES_MAX_KSCHD_SIZE] = {0};
@@ -296,7 +296,7 @@ int uaes_cbc_decryption(uint8_t   *ciphertext,
 int uaes_ecb_encryption(uint8_t   *plaintext, 
                         size_t    plaintext_size, 
                         uint8_t   *key, 
-                        crypto_t  aes_mode)
+                        aes_length_t  aes_mode)
 {
   int err = -1;
   uint32_t kschd[uAES_MAX_KSCHD_SIZE] = {0}; 
@@ -344,7 +344,7 @@ int uaes_ecb_encryption(uint8_t   *plaintext,
 int uaes_ecb_decryption(uint8_t   *ciphertext, 
                         size_t    ciphertext_size, 
                         uint8_t   *key, 
-                        crypto_t  aes_mode)
+                        aes_length_t  aes_mode)
 {
   int err = -1;
   uint32_t kschd[uAES_MAX_KSCHD_SIZE] = {0};
