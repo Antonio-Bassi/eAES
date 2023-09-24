@@ -50,7 +50,7 @@ static uint8_t input_buffer[uAES_MAX_INPUT_SIZE] = {0};
 static uint8_t key_buffer[uAES_MAX_KEY_SIZE]     = {0};
 
 static size_t uaes_strnlen(char *str, size_t lim);
-static void   uaes_xor_iv(uint8_t *blk, uint8_t *iv);
+static void   uaes_add_iv(uint8_t *blk, uint8_t *iv);
 static void   uaes_foward_cipher(uint8_t *buf, uint32_t *kschd, size_t Nk, size_t Nb, size_t Nr);
 static void   uaes_inverse_cipher(uint8_t *buf, uint32_t *kschd, size_t Nk, size_t Nb, size_t Nr);
 
@@ -85,12 +85,12 @@ static size_t uaes_strnlen(char *str, size_t lim)
 }
 
 /**
- * @brief Performs XOR operation between initialisation vector and data block
+ * @brief Adds Initialisation vector to data block.
  * 
  * @param blk Pointer to data block.
  * @param iv  Pointer to initialisation vector.
  */
-static void uaes_xor_iv(uint8_t *blk, uint8_t *iv)
+static void uaes_add_iv(uint8_t *blk, uint8_t *iv)
 {
   for(size_t c = 0UL; c < 4UL; c++)
   {
@@ -214,12 +214,12 @@ int uaes_cbc_encryption(uint8_t   *plaintext,
      (uAESRGE > aes_mode))
   {
     key_expansion(key, kschd, Nk, (Nb*(Nr+1)));
-    uaes_xor_iv(plaintext, init_vec);
+    uaes_add_iv(plaintext, init_vec);
     uaes_foward_cipher(&plaintext[uAES_BLOCK_SIZE*idx], kschd, Nk, Nb, Nr);
     idx++;
     while(offset > idx)
     {
-      uaes_xor_iv(&plaintext[uAES_BLOCK_SIZE*idx], &plaintext[uAES_BLOCK_SIZE*(idx-1)]);
+      uaes_add_iv(&plaintext[uAES_BLOCK_SIZE*idx], &plaintext[uAES_BLOCK_SIZE*(idx-1)]);
       uaes_foward_cipher(&plaintext[uAES_BLOCK_SIZE*idx], kschd, Nk, Nb, Nr);
       idx++;
     }
@@ -271,11 +271,11 @@ int uaes_cbc_decryption(uint8_t   *ciphertext,
     while(idx > 0)
     {
       uaes_inverse_cipher(&ciphertext[uAES_BLOCK_SIZE*idx], kschd, Nk, Nb, Nr);
-      uaes_xor_iv(&ciphertext[uAES_BLOCK_SIZE*idx], &ciphertext[uAES_BLOCK_SIZE*(idx-1)]);
+      uaes_add_iv(&ciphertext[uAES_BLOCK_SIZE*idx], &ciphertext[uAES_BLOCK_SIZE*(idx-1)]);
       idx--;
     }
     uaes_inverse_cipher(&ciphertext[uAES_BLOCK_SIZE*idx], kschd, Nk, Nb, Nr);
-    uaes_xor_iv(&ciphertext[uAES_BLOCK_SIZE*idx], init_vec);
+    uaes_add_iv(&ciphertext[uAES_BLOCK_SIZE*idx], init_vec);
     err = 0;
   }
   return err;
