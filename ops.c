@@ -38,16 +38,16 @@ static const uint8_t  s_box_fwd_map       = 0x63;
 static const uint8_t  s_box_inv_map       = 0x05;
 static const uint16_t rijndael_polynomial = 0x11B;
 
-static inline uint32_t rotword(uint32_t word);
-static inline uint32_t word_shift(uint32_t word, size_t nshifts);
-static inline uint32_t inv_word_shift(uint32_t word, size_t nshifts);
-static inline uint8_t  circ_shift(uint8_t byte, size_t nshifts);
-static inline uint8_t  inv_circ_shift(uint8_t byte, size_t nshifts);
-static uint8_t  gf256_mul(uint8_t Na, uint8_t Nb);
-static uint8_t  gf256_inv(uint8_t Na);
-static uint32_t rcon(uint8_t val);
-static uint8_t  sub_bytes(uint8_t byte);
-static uint32_t sub_word(uint32_t word);
+static inline uint32_t rotword( uint32_t word );
+static inline uint32_t word_shift( uint32_t word, size_t nshifts );
+static inline uint32_t inv_word_shift( uint32_t word, size_t nshifts );
+static inline uint8_t  circ_shift( uint8_t byte, size_t nshifts );
+static inline uint8_t  inv_circ_shift( uint8_t byte, size_t nshifts );
+static uint8_t  gf256_mul( uint8_t Na, uint8_t Nb );
+static uint8_t  gf256_inv( uint8_t Na );
+static uint32_t rcon( uint8_t val );
+static uint8_t  sub_bytes( uint8_t byte );
+static uint32_t sub_word( uint32_t word );
 
 /**
  * @brief           Performs word rotation operation on given 32-bit variable.

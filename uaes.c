@@ -32,27 +32,19 @@
 #include "uaes.h"
 #include "ops.h"
 
-#define uAES_HEADER_KEY_MSK   (0xFF00)
-#define uAES_HEADER_SIZE_MSK  (0x00FF)
-
-#define uAES128_KSCHD_SIZE    (44UL)
-#define uAES192_KSCHD_SIZE    (52UL)
-#define uAES256_KSCHD_SIZE    (60UL)
-#define uAES_MAX_KSCHD_SIZE   (60UL)
-
-#define uAES_HEADER_GET_CRYPTO_MODE(h)      (aes_length_t)((h & uAES_HEADER_KEY_MSK) >> 8 )
-#define uAES_HEADER_GET_SIZE(h)             (size_t)((h & uAES_HEADER_SIZE_MSK) >> 0 )
-#define uAES_HEADER_PUT_CRYPTO_MODE(h, kt)  h |= (uint16_t)(((uint8_t) kt ) << 8 )
-#define uAES_HEADER_PUT_SIZE(h, l)          h |= (uint16_t)(((uint8_t) l ) << 0 )
+#define uAES128_KSCHD_SIZE    ( 44UL )
+#define uAES192_KSCHD_SIZE    ( 52UL )
+#define uAES256_KSCHD_SIZE    ( 60UL )
+#define uAES_MAX_KSCHD_SIZE   ( 60UL )
 
 uint8_t trace_msk   = 0x00;
-static uint8_t input_buffer[uAES_MAX_INPUT_SIZE] = {0};
-static uint8_t key_buffer[uAES_MAX_KEY_SIZE]     = {0};
+static uint8_t input_buffer[ uAES_MAX_INPUT_SIZE ] = { 0 };
+static uint8_t key_buffer[ uAES_MAX_KEY_SIZE ] = { 0 };
 
-static size_t uaes_strnlen(char *str, size_t lim);
-static void   uaes_xor_iv(uint8_t *blk, uint8_t *iv);
-static void   uaes_foward_cipher(uint8_t *buf, uint32_t *kschd, size_t Nk, size_t Nb, size_t Nr);
-static void   uaes_inverse_cipher(uint8_t *buf, uint32_t *kschd, size_t Nk, size_t Nb, size_t Nr);
+static size_t uaes_strnlen( char *str, size_t lim );
+static void   uaes_xor_iv( uint8_t *blk, uint8_t *iv );
+static void   uaes_foward_cipher( uint8_t *buf, uint32_t *kschd, size_t Nk, size_t Nb, size_t Nr );
+static void   uaes_inverse_cipher( uint8_t *buf, uint32_t *kschd, size_t Nk, size_t Nb, size_t Nr );
 
 /**
  * @brief Sets trace mask for debugging.
@@ -77,9 +69,9 @@ uint8_t uaes_set_trace_msk(unsigned char msk)
 static size_t uaes_strnlen(char *str, size_t lim)
 {
   size_t s = 0;
-  if(( NULL != str) && (s < lim))
+  if( NULL != str )
   {
-    for(s = 0; ((s < lim)&&(str[s] != 0x00)); s++);
+    for( s = 0; ( ( s < lim ) && ( str[s] != 0x00 ) ); s++ );
   }
   return s;
 }
@@ -90,14 +82,14 @@ static size_t uaes_strnlen(char *str, size_t lim)
  * @param blk Pointer to data block.
  * @param iv  Pointer to initialisation vector.
  */
-static void uaes_xor_iv(uint8_t *blk, uint8_t *iv)
+static void uaes_xor_iv( uint8_t *blk, uint8_t *iv )
 {
   for(size_t c = 0UL; c < 4UL; c++)
   {
-    blk[4*c + 0] ^= iv[4*c + 0];
-    blk[4*c + 1] ^= iv[4*c + 1];   
-    blk[4*c + 2] ^= iv[4*c + 2];
-    blk[4*c + 3] ^= iv[4*c + 3];
+    blk[ 4*c + 0 ] ^= iv[ 4*c + 0 ];
+    blk[ 4*c + 1 ] ^= iv[ 4*c + 1 ];   
+    blk[ 4*c + 2 ] ^= iv[ 4*c + 2 ];
+    blk[ 4*c + 3 ] ^= iv[ 4*c + 3 ];
   }
   return;
 }
@@ -111,31 +103,31 @@ static void uaes_xor_iv(uint8_t *blk, uint8_t *iv)
  * @param Nr    Number of encryption rounds.
  * @return int If successful returns a 0, otherwise -1 will be returned.
  */
-static void uaes_foward_cipher(uint8_t *buf, uint32_t *kschd, size_t Nk, size_t Nb, size_t Nr)
+static void uaes_foward_cipher( uint8_t *buf, uint32_t *kschd, size_t Nk, size_t Nb, size_t Nr )
 {
-  uint8_t block[uAES_BLOCK_SIZE] = {0};
+  uint8_t block[ uAES_BLOCK_SIZE ] = { 0 };
 
-  memcpy((void *)block, (void *)buf, uAES_BLOCK_SIZE);
-  uAES_TRACE_BLOCK(uAES_TRACE_MSK_FWD, "round[%lu].block = ", block, (size_t)0);
-  add_round_key(block, kschd, 0, Nb);
-  for(size_t round = 1; round < Nr; round++)
+  memcpy( (void *)block, (void *)buf, uAES_BLOCK_SIZE );
+  uAES_TRACE_BLOCK( uAES_TRACE_MSK_FWD, "round[%lu].block = ", block, (size_t)0 );
+  add_round_key( block, kschd, 0, Nb );
+  for( size_t round = 1; round < Nr; round++ )
   {
-    uAES_TRACE_BLOCK(uAES_TRACE_MSK_FWD, "round[%lu].start = ", block, round);
-    sub_block(block, Nb);
-    uAES_TRACE_BLOCK(uAES_TRACE_MSK_FWD, "round[%lu].s_box = ", block, round);
-    shift_rows(block, Nb);
+    uAES_TRACE_BLOCK( uAES_TRACE_MSK_FWD, "round[%lu].start = ", block, round );
+    sub_block( block, Nb );
+    uAES_TRACE_BLOCK( uAES_TRACE_MSK_FWD, "round[%lu].s_box = ", block, round );
+    shift_rows( block, Nb );
     uAES_TRACE_BLOCK(uAES_TRACE_MSK_FWD, "round[%lu].sh_row = ", block, round);
-    mix_columns(block, Nb);
+    mix_columns( block, Nb );
     uAES_TRACE_BLOCK(uAES_TRACE_MSK_FWD, "round[%lu].m_col = ", block, round);
-    add_round_key(block, kschd, round, Nb);
+    add_round_key( block, kschd, round, Nb );
   }
-  sub_block(block, Nb);
-  uAES_TRACE_BLOCK(uAES_TRACE_MSK_FWD, "round[%lu].s_box = ", block, Nr);
-  shift_rows(block, Nb);
-  uAES_TRACE_BLOCK(uAES_TRACE_MSK_FWD, "round[%lu].sh_row = ", block, Nr);
-  add_round_key(block, kschd, Nr, Nb);
-  uAES_TRACE_BLOCK(uAES_TRACE_MSK_FWD, "round[%lu].end = ", block, Nr);
-  memcpy((void *)buf, (void *)block, uAES_BLOCK_SIZE);
+  sub_block( block, Nb );
+  uAES_TRACE_BLOCK(uAES_TRACE_MSK_FWD, "round[%lu].s_box = ", block, Nr );
+  shift_rows( block, Nb );
+  uAES_TRACE_BLOCK( uAES_TRACE_MSK_FWD, "round[%lu].sh_row = ", block, Nr );
+  add_round_key( block, kschd, Nr, Nb );
+  uAES_TRACE_BLOCK( uAES_TRACE_MSK_FWD, "round[%lu].end = ", block, Nr );
+  memcpy( (void *)buf, (void *)block, uAES_BLOCK_SIZE );
   return;
 }
 
@@ -147,31 +139,31 @@ static void uaes_foward_cipher(uint8_t *buf, uint32_t *kschd, size_t Nk, size_t 
  * @param Nb    Number of 32-bit words in a block.
  * @param Nr    Number of rounds.
  */
-static void uaes_inverse_cipher(uint8_t *buf, uint32_t *kschd, size_t Nk, size_t Nb, size_t Nr)
+static void uaes_inverse_cipher( uint8_t *buf, uint32_t *kschd, size_t Nk, size_t Nb, size_t Nr )
 {
-  uint8_t block[uAES_BLOCK_SIZE] = {0};
+  uint8_t block[ uAES_BLOCK_SIZE ] = { 0 };
 
-  memcpy((void *) block, (void *) buf, uAES_BLOCK_SIZE);
-  uAES_TRACE_BLOCK(uAES_TRACE_MSK_INV, "round[%lu].block = ", block, Nr);
-  add_round_key(block, kschd, Nr, Nb);
-  for(size_t round = Nr - 1; round > 0; round--)
+  memcpy( (void *) block, (void *) buf, uAES_BLOCK_SIZE );
+  uAES_TRACE_BLOCK( uAES_TRACE_MSK_INV, "round[%lu].block = ", block, Nr );
+  add_round_key( block, kschd, Nr, Nb );
+  for( size_t round = Nr - 1; round > 0; round-- )
   {
-    uAES_TRACE_BLOCK(uAES_TRACE_MSK_INV, "round[%lu].start = ", block, round);
-    inv_shift_rows(block, Nb);
-    uAES_TRACE_BLOCK(uAES_TRACE_MSK_INV, "round[%lu].inv_sh_row = ", block, round);
-    inv_sub_block(block, Nb);
-    uAES_TRACE_BLOCK(uAES_TRACE_MSK_INV, "round[%lu].inv_s_box = ", block, round);
-    add_round_key(block, kschd, round, Nb);
-    uAES_TRACE_BLOCK(uAES_TRACE_MSK_INV, "round[%lu].add_rkey = ", block, round);
-    inv_mix_columns(block, Nb);
+    uAES_TRACE_BLOCK( uAES_TRACE_MSK_INV, "round[%lu].start = ", block, round );
+    inv_shift_rows( block, Nb );
+    uAES_TRACE_BLOCK( uAES_TRACE_MSK_INV, "round[%lu].inv_sh_row = ", block, round );
+    inv_sub_block( block, Nb );
+    uAES_TRACE_BLOCK( uAES_TRACE_MSK_INV, "round[%lu].inv_s_box = ", block, round );
+    add_round_key( block, kschd, round, Nb );
+    uAES_TRACE_BLOCK( uAES_TRACE_MSK_INV, "round[%lu].add_rkey = ", block, round );
+    inv_mix_columns( block, Nb );
   }
-  inv_shift_rows(block, Nb);
-  uAES_TRACE_BLOCK(uAES_TRACE_MSK_INV, "round[%lu].inv_sh_row = ", block, (size_t)0);
-  inv_sub_block(block, Nb);
-  uAES_TRACE_BLOCK(uAES_TRACE_MSK_INV, "round[%lu].inv_s_box = ", block, (size_t)0);
-  add_round_key(block, kschd, 0, Nb);
-  uAES_TRACE_BLOCK(uAES_TRACE_MSK_FWD, "round[%lu].end = ", block, (size_t)0);
-  memcpy((void *)buf, (void *)block, uAES_BLOCK_SIZE);  
+  inv_shift_rows( block, Nb );
+  uAES_TRACE_BLOCK( uAES_TRACE_MSK_INV, "round[%lu].inv_sh_row = ", block, (size_t)0 );
+  inv_sub_block( block, Nb );
+  uAES_TRACE_BLOCK( uAES_TRACE_MSK_INV, "round[%lu].inv_s_box = ", block, (size_t)0 );
+  add_round_key( block, kschd, 0, Nb );
+  uAES_TRACE_BLOCK( uAES_TRACE_MSK_FWD, "round[%lu].end = ", block, (size_t)0 );
+  memcpy( (void *)buf, (void *)block, uAES_BLOCK_SIZE );  
   return;
 }
 
@@ -186,41 +178,41 @@ static void uaes_inverse_cipher(uint8_t *buf, uint32_t *kschd, size_t Nk, size_t
  * @return int [ 0] if sucessful.
  *             [-1] on failure. 
  */
-int uaes_cbc_encryption(uint8_t   *plaintext, 
-                        size_t    plaintext_size, 
-                        uint8_t   *key, 
-                        uint8_t   *init_vec,
-                        aes_length_t  aes_mode)
+int uaes_cbc_encryption( uint8_t   *plaintext, 
+                         size_t    plaintext_size, 
+                         uint8_t   *key, 
+                         uint8_t   *init_vec,
+                         aes_length_t  aes_mode )
 {
   int       err = -1;
   uint32_t  kschd[uAES_MAX_KSCHD_SIZE] = {0};
   size_t Nk, Nb, Nr, idx = 0, offset = plaintext_size;
 
-  if(0 != (plaintext_size & uAES_BLOCK_ALIGN_MASK))
+  if( 0 != ( plaintext_size & uAES_BLOCK_ALIGN_MASK ) )
   {
-    offset = uAES_ALIGN(plaintext_size, uAES_BLOCK_ALIGN);
+    offset = uAES_ALIGN( plaintext_size, uAES_BLOCK_ALIGN );
   }
   offset >>= 4UL;
 
-  Nk = (uAES128 == aes_mode)?(4UL ):((uAES192 == aes_mode)?(6UL ):((uAES256 == aes_mode)?(8UL ):(0UL)));
-  Nr = (uAES128 == aes_mode)?(10UL):((uAES192 == aes_mode)?(12UL):((uAES256 == aes_mode)?(14UL):(0UL)));
+  Nk = ( uAES128 == aes_mode ) ? ( 4UL  ) : ( ( uAES192 == aes_mode ) ? ( 6UL  ) : ( ( uAES256 == aes_mode ) ? ( 8UL  ) : ( 0UL ) ) );
+  Nr = ( uAES128 == aes_mode ) ? ( 10UL ) : ( ( uAES192 == aes_mode ) ? ( 12UL ) : ( ( uAES256 == aes_mode ) ? ( 14UL ) : ( 0UL ) ) );
   Nb = 4UL;
 
-  if((NULL != key)                           && 
-     (NULL != plaintext)                     &&
-     (NULL != init_vec)                      && 
-     (0 < plaintext_size)                    && 
-     (uAES_MAX_INPUT_SIZE >= plaintext_size) && 
-     (uAESRGE > aes_mode))
+  if( ( NULL != key )                           && 
+      ( NULL != plaintext )                     &&
+      ( NULL != init_vec )                      && 
+      ( 0 < plaintext_size )                    && 
+      ( uAES_MAX_INPUT_SIZE >= plaintext_size ) && 
+      ( uAESRGE > aes_mode ) )
   {
-    key_expansion(key, kschd, Nk, (Nb*(Nr+1)));
-    uaes_xor_iv(plaintext, init_vec);
-    uaes_foward_cipher(&plaintext[uAES_BLOCK_SIZE*idx], kschd, Nk, Nb, Nr);
+    key_expansion( key, kschd, Nk, ( Nb * ( Nr + 1 ) ) );
+    uaes_xor_iv( plaintext, init_vec );
+    uaes_foward_cipher( &plaintext[ uAES_BLOCK_SIZE * idx ], kschd, Nk, Nb, Nr );
     idx++;
-    while(offset > idx)
+    while( offset > idx )
     {
-      uaes_xor_iv(&plaintext[uAES_BLOCK_SIZE*idx], &plaintext[uAES_BLOCK_SIZE*(idx-1)]);
-      uaes_foward_cipher(&plaintext[uAES_BLOCK_SIZE*idx], kschd, Nk, Nb, Nr);
+      uaes_xor_iv( &plaintext[ uAES_BLOCK_SIZE * idx ], &plaintext[ uAES_BLOCK_SIZE * ( idx - 1 ) ] );
+      uaes_foward_cipher( &plaintext[ uAES_BLOCK_SIZE * idx ], kschd, Nk, Nb, Nr );
       idx++;
     }
     err = 0;
@@ -239,43 +231,43 @@ int uaes_cbc_encryption(uint8_t   *plaintext,
  * @return int [ 0] if sucessful.
  *             [-1] on failure. 
  */
-int uaes_cbc_decryption(uint8_t   *ciphertext, 
-                        size_t    ciphertext_size, 
-                        uint8_t   *key, 
-                        uint8_t   *init_vec,
-                        aes_length_t  aes_mode)
+int uaes_cbc_decryption( uint8_t      *ciphertext, 
+                         size_t       ciphertext_size, 
+                         uint8_t      *key, 
+                         uint8_t      *init_vec,
+                         aes_length_t  aes_mode )
 {
   int       err = -1;
-  uint32_t  kschd[uAES_MAX_KSCHD_SIZE] = {0};
+  uint32_t  kschd[ uAES_MAX_KSCHD_SIZE ] = { 0 };
   size_t Nk, Nb, Nr, idx = 0, offset = ciphertext_size;
 
-  if(0 != (ciphertext_size & uAES_BLOCK_ALIGN_MASK))
+  if( 0 != ( ciphertext_size & uAES_BLOCK_ALIGN_MASK ) )
   {
-    offset = uAES_ALIGN(ciphertext_size, uAES_BLOCK_ALIGN);
+    offset = uAES_ALIGN( ciphertext_size, uAES_BLOCK_ALIGN );
   }
   offset >>= 4UL;
 
-  Nk = (uAES128 == aes_mode)?(4UL ):((uAES192 == aes_mode)?(6UL ):((uAES256 == aes_mode)?(8UL ):(0UL)));
-  Nr = (uAES128 == aes_mode)?(10UL):((uAES192 == aes_mode)?(12UL):((uAES256 == aes_mode)?(14UL):(0UL)));
+  Nk = ( uAES128 == aes_mode ) ? ( 4UL  ) : ( ( uAES192 == aes_mode ) ? ( 6UL  ) : ( ( uAES256 == aes_mode ) ? ( 8UL  ) : ( 0UL ) ) );
+  Nr = ( uAES128 == aes_mode ) ? ( 10UL ) : ( ( uAES192 == aes_mode ) ? ( 12UL ) : ( ( uAES256 == aes_mode ) ? ( 14UL ) : ( 0UL ) ) );
   Nb = 4UL;
 
-  if((NULL != key)                            && 
-     (NULL != ciphertext)                     &&
-     (NULL != init_vec)                       && 
-     (0 < ciphertext_size)                    && 
-     (uAES_MAX_INPUT_SIZE >= ciphertext_size) && 
-     (uAESRGE > aes_mode))
+  if( ( NULL != key )                            && 
+      ( NULL != ciphertext )                     &&
+      ( NULL != init_vec )                       && 
+      ( 0 < ciphertext_size )                    && 
+      ( uAES_MAX_INPUT_SIZE >= ciphertext_size ) && 
+      ( uAESRGE > aes_mode ) )
   {
     idx = offset - 1UL;
-    key_expansion(key, kschd, Nk, (Nb*(Nr+1)));
-    while(idx > 0)
+    key_expansion( key, kschd, Nk, ( Nb * ( Nr + 1 ) ) );
+    while( idx > 0 )
     {
-      uaes_inverse_cipher(&ciphertext[uAES_BLOCK_SIZE*idx], kschd, Nk, Nb, Nr);
-      uaes_xor_iv(&ciphertext[uAES_BLOCK_SIZE*idx], &ciphertext[uAES_BLOCK_SIZE*(idx-1)]);
+      uaes_inverse_cipher( &ciphertext[uAES_BLOCK_SIZE*idx], kschd, Nk, Nb, Nr );
+      uaes_xor_iv( &ciphertext[uAES_BLOCK_SIZE*idx], &ciphertext[ uAES_BLOCK_SIZE * ( idx - 1 ) ] );
       idx--;
     }
-    uaes_inverse_cipher(&ciphertext[uAES_BLOCK_SIZE*idx], kschd, Nk, Nb, Nr);
-    uaes_xor_iv(&ciphertext[uAES_BLOCK_SIZE*idx], init_vec);
+    uaes_inverse_cipher( &ciphertext[ uAES_BLOCK_SIZE * idx ], kschd, Nk, Nb, Nr );
+    uaes_xor_iv( &ciphertext[ uAES_BLOCK_SIZE * idx ], init_vec );
     err = 0;
   }
   return err;
@@ -293,23 +285,23 @@ int uaes_cbc_decryption(uint8_t   *ciphertext,
  * @return int [ 0] if sucessful.
  *             [-1] on failure. 
  */
-int uaes_ecb_encryption(uint8_t   *plaintext, 
-                        size_t    plaintext_size, 
-                        uint8_t   *key, 
-                        aes_length_t  aes_mode)
+int uaes_ecb_encryption( uint8_t   *plaintext, 
+                         size_t    plaintext_size, 
+                         uint8_t   *key, 
+                         aes_length_t  aes_mode )
 {
   int err = -1;
-  uint32_t kschd[uAES_MAX_KSCHD_SIZE] = {0}; 
+  uint32_t kschd[ uAES_MAX_KSCHD_SIZE ] = {0}; 
   size_t Nk, Nb, Nr, idx = 0, offset = plaintext_size;
 
-  if(0 != (plaintext_size & uAES_BLOCK_ALIGN_MASK))
+  if( 0 != (plaintext_size & uAES_BLOCK_ALIGN_MASK) )
   {
-    offset = uAES_ALIGN(plaintext_size, uAES_BLOCK_ALIGN);
+    offset = uAES_ALIGN( plaintext_size, uAES_BLOCK_ALIGN );
   }
   offset >>= 4UL;
 
-  Nk = (uAES128 == aes_mode)?(4UL ):((uAES192 == aes_mode)?(6UL ):((uAES256 == aes_mode)?(8UL ):(0UL)));
-  Nr = (uAES128 == aes_mode)?(10UL):((uAES192 == aes_mode)?(12UL):((uAES256 == aes_mode)?(14UL):(0UL)));
+  Nk = ( uAES128 == aes_mode ) ? ( 4UL  ) : ( ( uAES192 == aes_mode ) ? ( 6UL  ) : ( ( uAES256 == aes_mode ) ? ( 8UL  ) : ( 0UL ) ) );
+  Nr = ( uAES128 == aes_mode ) ? ( 10UL ) : ( ( uAES192 == aes_mode ) ? ( 12UL ) : ( ( uAES256 == aes_mode ) ? ( 14UL ) : ( 0UL ) ) );
   Nb = 4UL;
 
   if((NULL != key)                           && 
@@ -318,10 +310,10 @@ int uaes_ecb_encryption(uint8_t   *plaintext,
      (uAES_MAX_INPUT_SIZE >= plaintext_size) && 
      (uAESRGE > aes_mode))
   {
-    key_expansion(key, kschd, Nk, (Nb*(Nr+1)));
-    while(offset > idx)
+    key_expansion( key, kschd, Nk, ( Nb * ( Nr + 1 ) ) );
+    while( offset > idx )
     {
-      uaes_foward_cipher(&plaintext[uAES_BLOCK_SIZE*idx], kschd, Nk, Nb, Nr);
+      uaes_foward_cipher( &plaintext[ uAES_BLOCK_SIZE * idx ], kschd, Nk, Nb, Nr );
       idx++;
     }
     err = 0;
@@ -341,35 +333,35 @@ int uaes_ecb_encryption(uint8_t   *plaintext,
  * @return int [ 0] if sucessful.
  *             [-1] on failure. 
  */
-int uaes_ecb_decryption(uint8_t   *ciphertext, 
-                        size_t    ciphertext_size, 
-                        uint8_t   *key, 
-                        aes_length_t  aes_mode)
+int uaes_ecb_decryption( uint8_t   *ciphertext, 
+                         size_t    ciphertext_size, 
+                         uint8_t   *key, 
+                         aes_length_t  aes_mode )
 {
   int err = -1;
-  uint32_t kschd[uAES_MAX_KSCHD_SIZE] = {0};
+  uint32_t kschd[ uAES_MAX_KSCHD_SIZE ] = { 0 };
   size_t Nk, Nb, Nr, idx = 0, offset = ciphertext_size;
 
-  if(0 != (ciphertext_size & uAES_BLOCK_ALIGN_MASK))
+  if(0 != ( ciphertext_size & uAES_BLOCK_ALIGN_MASK ) )
   {
-    offset = uAES_ALIGN(ciphertext_size, uAES_BLOCK_ALIGN);
+    offset = uAES_ALIGN( ciphertext_size, uAES_BLOCK_ALIGN );
   }
   offset >>= 4UL;
 
-  Nk = (uAES128 == aes_mode)?(4UL ):((uAES192 == aes_mode)?(6UL ):((uAES256 == aes_mode)?(8UL ):(0UL)));
-  Nr = (uAES128 == aes_mode)?(10UL):((uAES192 == aes_mode)?(12UL):((uAES256 == aes_mode)?(14UL):(0UL)));
+  Nk = ( uAES128 == aes_mode ) ? ( 4UL  ) : ( ( uAES192 == aes_mode ) ? ( 6UL  ) : ( ( uAES256 == aes_mode ) ? ( 8UL  ) : ( 0UL ) ) );
+  Nr = ( uAES128 == aes_mode ) ? ( 10UL ) : ( ( uAES192 == aes_mode ) ? ( 12UL ) : ( ( uAES256 == aes_mode ) ? ( 14UL ) : ( 0UL ) ) );
   Nb = 4UL;
 
-  if((NULL != key)                            && 
-     (NULL != ciphertext)                     && 
-     (0 < ciphertext_size)                    && 
-     (uAES_MAX_INPUT_SIZE >= ciphertext_size) && 
-     (uAESRGE > aes_mode))
+  if( ( NULL != key )                            && 
+      ( NULL != ciphertext )                     && 
+      ( 0 < ciphertext_size )                    && 
+      ( uAES_MAX_INPUT_SIZE >= ciphertext_size ) && 
+      ( uAESRGE > aes_mode ) )
   {
-    key_expansion(key, kschd, Nk, (Nb*(Nr+1)));
+    key_expansion( key, kschd, Nk, ( Nb * ( Nr + 1 ) ) );
     while(offset > idx)
     {
-      uaes_inverse_cipher(&ciphertext[uAES_BLOCK_SIZE*idx], kschd, Nk, Nb, Nr);
+      uaes_inverse_cipher( &ciphertext[ uAES_BLOCK_SIZE * idx ], kschd, Nk, Nb, Nr );
       idx++;
     }
     err = 0;
@@ -386,16 +378,16 @@ int uaes_ecb_decryption(uint8_t   *ciphertext,
  * @return int [ 0] if sucessful.
  *             [-1] on failure. 
  */
-int uaes128enc(uint8_t *plaintext, uint8_t *key, size_t plaintext_size)
+int uaes128enc( uint8_t *plaintext, uint8_t *key, size_t plaintext_size )
 {
   int err = -1;
   const size_t Nk = 4, Nb = 4, Nr = 10;
-  uint32_t kschd[uAES128_KSCHD_SIZE] = {0};
-  if((NULL != key) && (NULL != plaintext) && (0 < plaintext_size) && (uAES_BLOCK_SIZE >= plaintext_size))
+  uint32_t kschd[ uAES128_KSCHD_SIZE ] = { 0 };
+  if( ( NULL != key ) && ( NULL != plaintext ) && ( 0 < plaintext_size ) && ( uAES_BLOCK_SIZE >= plaintext_size ) )
   {
     err = 0;
-    key_expansion(key, kschd, Nk, (Nb*(Nr+1)));
-    uaes_foward_cipher(plaintext, kschd, Nk, Nb, Nr);
+    key_expansion( key, kschd, Nk, ( Nb * ( Nr + 1 ) ) );
+    uaes_foward_cipher( plaintext, kschd, Nk, Nb, Nr );
   }
   return err;
 }
@@ -409,16 +401,16 @@ int uaes128enc(uint8_t *plaintext, uint8_t *key, size_t plaintext_size)
  * @return int [ 0] if sucessful.
  *             [-1] on failure. 
  */
-int uaes192enc(uint8_t *plaintext, uint8_t *key, size_t plaintext_size)
+int uaes192enc( uint8_t *plaintext, uint8_t *key, size_t plaintext_size )
 {
   int err = -1;
   const size_t Nk = 6, Nb = 4, Nr = 12;
-  uint32_t kschd[uAES192_KSCHD_SIZE] = {0};
-  if((NULL != key) && (NULL != plaintext) && (0 < plaintext_size) && (uAES_BLOCK_SIZE >= plaintext_size))
+  uint32_t kschd[ uAES192_KSCHD_SIZE ] = { 0 };
+  if( ( NULL != key ) && ( NULL != plaintext ) && ( 0 < plaintext_size ) && ( uAES_BLOCK_SIZE >= plaintext_size ) )
   {
     err = 0;
-    key_expansion(key, kschd, Nk, (Nb*(Nr+1)));
-    uaes_foward_cipher(plaintext, kschd, Nk, Nb, Nr);
+    key_expansion( key, kschd, Nk, ( Nb * ( Nr+1 ) ) );
+    uaes_foward_cipher( plaintext, kschd, Nk, Nb, Nr );
   }
   return err;
 }
@@ -432,16 +424,16 @@ int uaes192enc(uint8_t *plaintext, uint8_t *key, size_t plaintext_size)
  * @return int [ 0] if sucessful.
  *             [-1] on failure. 
  */
-int uaes256enc(uint8_t *plaintext, uint8_t *key, size_t plaintext_size)
+int uaes256enc( uint8_t *plaintext, uint8_t *key, size_t plaintext_size )
 {
   int err = -1;
   const size_t Nk = 8, Nb = 4, Nr = 14;
-  uint32_t kschd[uAES256_KSCHD_SIZE] = {0};
-  if((NULL != key) && (NULL != plaintext) && (0 < plaintext_size) && (uAES_BLOCK_SIZE >= plaintext_size))
+  uint32_t kschd[ uAES256_KSCHD_SIZE ] = {0};
+  if( ( NULL != key ) && ( NULL != plaintext ) && ( 0 < plaintext_size ) && ( uAES_BLOCK_SIZE >= plaintext_size ) )
   {
     err = 0;
-    key_expansion(key, kschd, Nk, (Nb*(Nr+1)));
-    uaes_foward_cipher(plaintext, kschd, Nk, Nb, Nr);
+    key_expansion( key, kschd, Nk, ( Nb * ( Nr + 1 ) ) );
+    uaes_foward_cipher( plaintext, kschd, Nk, Nb, Nr );
   }
   return err;
 }
@@ -455,16 +447,16 @@ int uaes256enc(uint8_t *plaintext, uint8_t *key, size_t plaintext_size)
  * @return int [ 0] if sucessful.
  *             [-1] on failure. 
  */
-extern int uaes128dec(uint8_t *ciphertext, uint8_t *key, size_t ciphertext_size)
+extern int uaes128dec( uint8_t *ciphertext, uint8_t *key, size_t ciphertext_size )
 {
   int err = -1;
   const size_t Nk = 4, Nb = 4, Nr = 10;
-  uint32_t kschd[uAES128_KSCHD_SIZE] = {0};
-  if((NULL != key) && (NULL != ciphertext) && (0 < ciphertext_size) && (uAES_BLOCK_SIZE >= ciphertext_size))
+  uint32_t kschd[ uAES128_KSCHD_SIZE ] = { 0 };
+  if( ( NULL != key ) && ( NULL != ciphertext ) && ( 0 < ciphertext_size ) && ( uAES_BLOCK_SIZE >= ciphertext_size ) )
   {
     err = 0;
-    key_expansion(key, kschd, Nk, (Nb*(Nr+1)));
-    uaes_inverse_cipher(ciphertext, kschd, Nk, Nb, Nr);
+    key_expansion( key, kschd, Nk, ( Nb * ( Nr+1 ) ) );
+    uaes_inverse_cipher( ciphertext, kschd, Nk, Nb, Nr );
   }
   return err;
 }
@@ -478,16 +470,16 @@ extern int uaes128dec(uint8_t *ciphertext, uint8_t *key, size_t ciphertext_size)
  * @return int [ 0] if sucessful.
  *             [-1] on failure. 
  */
-extern int uaes192dec(uint8_t *ciphertext, uint8_t *key, size_t ciphertext_size)
+extern int uaes192dec( uint8_t *ciphertext, uint8_t *key, size_t ciphertext_size )
 {
   int err = -1;
   const size_t Nk = 6, Nb = 4, Nr = 12;
   uint32_t kschd[uAES192_KSCHD_SIZE] = {0};
-  if((NULL != key) && (NULL != ciphertext) && (0 < ciphertext_size) && (uAES_BLOCK_SIZE >= ciphertext_size))
+  if( ( NULL != key ) && ( NULL != ciphertext ) && ( 0 < ciphertext_size ) && ( uAES_BLOCK_SIZE >= ciphertext_size ) )
   {
     err = 0;
-    key_expansion(key, kschd, Nk, (Nb*(Nr+1)));
-    uaes_inverse_cipher(ciphertext, kschd, Nk, Nb, Nr);
+    key_expansion( key, kschd, Nk, ( Nb * ( Nr + 1 ) ) );
+    uaes_inverse_cipher( ciphertext, kschd, Nk, Nb, Nr );
   }
   return err;
 }
@@ -501,16 +493,16 @@ extern int uaes192dec(uint8_t *ciphertext, uint8_t *key, size_t ciphertext_size)
  * @return int [ 0] if sucessful.
  *             [-1] on failure. 
  */
-extern int uaes256dec(uint8_t *ciphertext, uint8_t *key, size_t ciphertext_size)
+extern int uaes256dec( uint8_t *ciphertext, uint8_t *key, size_t ciphertext_size )
 {
   int err = -1;
   const size_t Nk = 8, Nb = 4, Nr = 14;
-  uint32_t kschd[uAES256_KSCHD_SIZE] = {0};
-  if((NULL != key) && (NULL != ciphertext) && (0 < ciphertext_size) && (uAES_BLOCK_SIZE >= ciphertext_size))
+  uint32_t kschd[ uAES256_KSCHD_SIZE ] = { 0 };
+  if( ( NULL != key ) && ( NULL != ciphertext ) && ( 0 < ciphertext_size ) && ( uAES_BLOCK_SIZE >= ciphertext_size ) )
   {
     err = 0;
-    key_expansion(key, kschd, Nk, (Nb*(Nr+1)));
-    uaes_inverse_cipher(ciphertext, kschd, Nk, Nb, Nr);
+    key_expansion( key, kschd, Nk, ( Nb * ( Nr + 1 ) ) );
+    uaes_inverse_cipher( ciphertext, kschd, Nk, Nb, Nr );
   }
   return err;
 }
