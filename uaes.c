@@ -174,7 +174,7 @@ static void uaes_inverse_cipher( uint8_t *buf, uint32_t *kschd, size_t Nk, size_
  * @param plaintext_size  Plaintext buffer size.
  * @param key             Pointer to key buffer.
  * @param init_vec        16-Byte Initialisation vector.
- * @param aes_mode        Encryption/Decryption mode.
+ * @param aes_length        Encryption/Decryption mode.
  * @return int [ 0] if sucessful.
  *             [-1] on failure. 
  */
@@ -182,7 +182,7 @@ int uaes_cbc_encryption( uint8_t   *plaintext,
                          size_t    plaintext_size, 
                          uint8_t   *key, 
                          uint8_t   *init_vec,
-                         aes_length_t  aes_mode )
+                         aes_length_t  aes_length )
 {
   int       err = -1;
   uint32_t  kschd[uAES_MAX_KSCHD_SIZE] = {0};
@@ -194,8 +194,8 @@ int uaes_cbc_encryption( uint8_t   *plaintext,
   }
   offset >>= 4UL;
 
-  Nk = ( uAES128 == aes_mode ) ? ( 4UL  ) : ( ( uAES192 == aes_mode ) ? ( 6UL  ) : ( ( uAES256 == aes_mode ) ? ( 8UL  ) : ( 0UL ) ) );
-  Nr = ( uAES128 == aes_mode ) ? ( 10UL ) : ( ( uAES192 == aes_mode ) ? ( 12UL ) : ( ( uAES256 == aes_mode ) ? ( 14UL ) : ( 0UL ) ) );
+  Nk = ( uAES128 == aes_length ) ? ( 4UL  ) : ( ( uAES192 == aes_length ) ? ( 6UL  ) : ( ( uAES256 == aes_length ) ? ( 8UL  ) : ( 0UL ) ) );
+  Nr = ( uAES128 == aes_length ) ? ( 10UL ) : ( ( uAES192 == aes_length ) ? ( 12UL ) : ( ( uAES256 == aes_length ) ? ( 14UL ) : ( 0UL ) ) );
   Nb = 4UL;
 
   if( ( NULL != key )                           && 
@@ -203,7 +203,7 @@ int uaes_cbc_encryption( uint8_t   *plaintext,
       ( NULL != init_vec )                      && 
       ( 0 < plaintext_size )                    && 
       ( uAES_MAX_INPUT_SIZE >= plaintext_size ) && 
-      ( uAESRGE > aes_mode ) )
+      ( uAESRGE > aes_length ) )
   {
     key_expansion( key, kschd, Nk, ( Nb * ( Nr + 1 ) ) );
     uaes_xor_iv( plaintext, init_vec );
@@ -227,7 +227,7 @@ int uaes_cbc_encryption( uint8_t   *plaintext,
  * @param ciphertext_size Ciphertext buffer size.
  * @param key             Pointer to key buffer.
  * @param init_vec        16-Byte initialisation vector.
- * @param aes_mode        Encryption/Decryption mode.
+ * @param aes_length        Encryption/Decryption mode.
  * @return int [ 0] if sucessful.
  *             [-1] on failure. 
  */
@@ -235,7 +235,7 @@ int uaes_cbc_decryption( uint8_t      *ciphertext,
                          size_t       ciphertext_size, 
                          uint8_t      *key, 
                          uint8_t      *init_vec,
-                         aes_length_t  aes_mode )
+                         aes_length_t  aes_length )
 {
   int       err = -1;
   uint32_t  kschd[ uAES_MAX_KSCHD_SIZE ] = { 0 };
@@ -247,8 +247,8 @@ int uaes_cbc_decryption( uint8_t      *ciphertext,
   }
   offset >>= 4UL;
 
-  Nk = ( uAES128 == aes_mode ) ? ( 4UL  ) : ( ( uAES192 == aes_mode ) ? ( 6UL  ) : ( ( uAES256 == aes_mode ) ? ( 8UL  ) : ( 0UL ) ) );
-  Nr = ( uAES128 == aes_mode ) ? ( 10UL ) : ( ( uAES192 == aes_mode ) ? ( 12UL ) : ( ( uAES256 == aes_mode ) ? ( 14UL ) : ( 0UL ) ) );
+  Nk = ( uAES128 == aes_length ) ? ( 4UL  ) : ( ( uAES192 == aes_length ) ? ( 6UL  ) : ( ( uAES256 == aes_length ) ? ( 8UL  ) : ( 0UL ) ) );
+  Nr = ( uAES128 == aes_length ) ? ( 10UL ) : ( ( uAES192 == aes_length ) ? ( 12UL ) : ( ( uAES256 == aes_length ) ? ( 14UL ) : ( 0UL ) ) );
   Nb = 4UL;
 
   if( ( NULL != key )                            && 
@@ -256,7 +256,7 @@ int uaes_cbc_decryption( uint8_t      *ciphertext,
       ( NULL != init_vec )                       && 
       ( 0 < ciphertext_size )                    && 
       ( uAES_MAX_INPUT_SIZE >= ciphertext_size ) && 
-      ( uAESRGE > aes_mode ) )
+      ( uAESRGE > aes_length ) )
   {
     idx = offset - 1UL;
     key_expansion( key, kschd, Nk, ( Nb * ( Nr + 1 ) ) );
@@ -281,14 +281,14 @@ int uaes_cbc_decryption( uint8_t      *ciphertext,
  * @param plaintext       Pointer to plaintext buffer.
  * @param plaintext_size  Size of plaintext buffer.
  * @param key             Pointer to key buffer.
- * @param aes_mode        Encryption/Decryption mode. 
+ * @param aes_length        Encryption/Decryption mode. 
  * @return int [ 0] if sucessful.
  *             [-1] on failure. 
  */
 int uaes_ecb_encryption( uint8_t   *plaintext, 
                          size_t    plaintext_size, 
                          uint8_t   *key, 
-                         aes_length_t  aes_mode )
+                         aes_length_t  aes_length )
 {
   int err = -1;
   uint32_t kschd[ uAES_MAX_KSCHD_SIZE ] = {0}; 
@@ -300,15 +300,15 @@ int uaes_ecb_encryption( uint8_t   *plaintext,
   }
   offset >>= 4UL;
   
-  Nk = ( uAES128 == aes_mode ) ? ( 4UL  ) : ( ( uAES192 == aes_mode ) ? ( 6UL  ) : ( ( uAES256 == aes_mode ) ? ( 8UL  ) : ( 0UL ) ) );
-  Nr = ( uAES128 == aes_mode ) ? ( 10UL ) : ( ( uAES192 == aes_mode ) ? ( 12UL ) : ( ( uAES256 == aes_mode ) ? ( 14UL ) : ( 0UL ) ) );
+  Nk = ( uAES128 == aes_length ) ? ( 4UL  ) : ( ( uAES192 == aes_length ) ? ( 6UL  ) : ( ( uAES256 == aes_length ) ? ( 8UL  ) : ( 0UL ) ) );
+  Nr = ( uAES128 == aes_length ) ? ( 10UL ) : ( ( uAES192 == aes_length ) ? ( 12UL ) : ( ( uAES256 == aes_length ) ? ( 14UL ) : ( 0UL ) ) );
   Nb = 4UL;
 
   if((NULL != key)                           && 
      (NULL != plaintext)                     && 
      (0 < plaintext_size)                    && 
      (uAES_MAX_INPUT_SIZE >= plaintext_size) && 
-     (uAESRGE > aes_mode))
+     (uAESRGE > aes_length))
   {
     key_expansion( key, kschd, Nk, ( Nb * ( Nr + 1 ) ) );
     while( offset > idx )
@@ -329,14 +329,14 @@ int uaes_ecb_encryption( uint8_t   *plaintext,
  * @param ciphertext      Pointer to ciphertext buffer.
  * @param ciphertext_size Size of ciphertext buffer.
  * @param key             Pointer to key buffer.
- * @param aes_mode        Encryption/Decryption mode. 
+ * @param aes_length        Encryption/Decryption mode. 
  * @return int [ 0] if sucessful.
  *             [-1] on failure. 
  */
 int uaes_ecb_decryption( uint8_t   *ciphertext, 
                          size_t    ciphertext_size, 
                          uint8_t   *key, 
-                         aes_length_t  aes_mode )
+                         aes_length_t  aes_length )
 {
   int err = -1;
   uint32_t kschd[ uAES_MAX_KSCHD_SIZE ] = { 0 };
@@ -348,15 +348,15 @@ int uaes_ecb_decryption( uint8_t   *ciphertext,
   }
   offset >>= 4UL;
 
-  Nk = ( uAES128 == aes_mode ) ? ( 4UL  ) : ( ( uAES192 == aes_mode ) ? ( 6UL  ) : ( ( uAES256 == aes_mode ) ? ( 8UL  ) : ( 0UL ) ) );
-  Nr = ( uAES128 == aes_mode ) ? ( 10UL ) : ( ( uAES192 == aes_mode ) ? ( 12UL ) : ( ( uAES256 == aes_mode ) ? ( 14UL ) : ( 0UL ) ) );
+  Nk = ( uAES128 == aes_length ) ? ( 4UL  ) : ( ( uAES192 == aes_length ) ? ( 6UL  ) : ( ( uAES256 == aes_length ) ? ( 8UL  ) : ( 0UL ) ) );
+  Nr = ( uAES128 == aes_length ) ? ( 10UL ) : ( ( uAES192 == aes_length ) ? ( 12UL ) : ( ( uAES256 == aes_length ) ? ( 14UL ) : ( 0UL ) ) );
   Nb = 4UL;
 
   if( ( NULL != key )                            && 
       ( NULL != ciphertext )                     && 
       ( 0 < ciphertext_size )                    && 
       ( uAES_MAX_INPUT_SIZE >= ciphertext_size ) && 
-      ( uAESRGE > aes_mode ) )
+      ( uAESRGE > aes_length ) )
   {
     key_expansion( key, kschd, Nk, ( Nb * ( Nr + 1 ) ) );
     while(offset > idx)
