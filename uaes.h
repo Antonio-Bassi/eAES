@@ -45,6 +45,19 @@
 #define uAES_MAX_KEY_SIZE     (32UL)
 #define uAES_BLOCK_SIZE       (16UL)
 
+/**
+ * @brief Data type definitions
+ */
+typedef unsigned char           u8;
+typedef unsigned short          u16;
+typedef unsigned int            u32;
+typedef unsigned long long int  u64;
+
+typedef signed char             s8;
+typedef signed short            s16;
+typedef signed int              s32;
+typedef signed long long int    s64;
+
 typedef enum aes_length
 {
   uAES128 = 0,  // 128 bit key length.
@@ -64,14 +77,14 @@ extern uint8_t   uaes_set_trace_msk(uint8_t msk);
 extern int uaes_ecb_encryption( uint8_t   *plaintext, 
                                 size_t    plaintext_size, 
                                 uint8_t   *key, 
-                                aes_length_t  crypto_mode);
+                                aes_length_t  aes_mode );
 /* ******************************************************************** */
 
 extern int uaes_cbc_encryption( uint8_t   *plaintext, 
                                 size_t    plaintext_size, 
                                 uint8_t   *key, 
                                 uint8_t   *init_vec,
-                                aes_length_t  aes_mode);
+                                aes_length_t  aes_mode );
 
 extern int uaes128enc(uint8_t *plaintext, uint8_t *key, size_t plaintext_size);
 extern int uaes192enc(uint8_t *plaintext, uint8_t *key, size_t plaintext_size);
@@ -85,7 +98,7 @@ extern int uaes256enc(uint8_t *plaintext, uint8_t *key, size_t plaintext_size);
 extern int uaes_ecb_decryption( uint8_t   *ciphertext, 
                                 size_t    ciphertext_size, 
                                 uint8_t   *key, 
-                                aes_length_t  crypto_mode );
+                                aes_length_t  aes_mode );
 /* ******************************************************************** */
 
 extern int uaes_cbc_decryption( uint8_t   *plaintext, 

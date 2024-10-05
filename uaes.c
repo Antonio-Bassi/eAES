@@ -262,8 +262,8 @@ int uaes_cbc_decryption( uint8_t      *ciphertext,
     key_expansion( key, kschd, Nk, ( Nb * ( Nr + 1 ) ) );
     while( idx > 0 )
     {
-      uaes_inverse_cipher( &ciphertext[uAES_BLOCK_SIZE*idx], kschd, Nk, Nb, Nr );
-      uaes_xor_iv( &ciphertext[uAES_BLOCK_SIZE*idx], &ciphertext[ uAES_BLOCK_SIZE * ( idx - 1 ) ] );
+      uaes_inverse_cipher( &ciphertext[ uAES_BLOCK_SIZE * idx ], kschd, Nk, Nb, Nr );
+      uaes_xor_iv( &ciphertext[ uAES_BLOCK_SIZE * idx ], &ciphertext[ uAES_BLOCK_SIZE * ( idx - 1 ) ] );
       idx--;
     }
     uaes_inverse_cipher( &ciphertext[ uAES_BLOCK_SIZE * idx ], kschd, Nk, Nb, Nr );
@@ -299,7 +299,7 @@ int uaes_ecb_encryption( uint8_t   *plaintext,
     offset = uAES_ALIGN( plaintext_size, uAES_BLOCK_ALIGN );
   }
   offset >>= 4UL;
-
+  
   Nk = ( uAES128 == aes_mode ) ? ( 4UL  ) : ( ( uAES192 == aes_mode ) ? ( 6UL  ) : ( ( uAES256 == aes_mode ) ? ( 8UL  ) : ( 0UL ) ) );
   Nr = ( uAES128 == aes_mode ) ? ( 10UL ) : ( ( uAES192 == aes_mode ) ? ( 12UL ) : ( ( uAES256 == aes_mode ) ? ( 14UL ) : ( 0UL ) ) );
   Nb = 4UL;
